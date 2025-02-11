@@ -1,6 +1,6 @@
 {
   "name": "@alexgyver/svplot",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "description": "Tiny chart plotter",
   "main": "./SVPlot.js",
   "module": "./SVPlot.js",

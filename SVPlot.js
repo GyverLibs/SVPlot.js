@@ -8,6 +8,8 @@ const minStep = 1;
 const maxTStep = 150;
 const fsize = 12;
 const ystep = 16;
+const minRange = 1;
+const maxRange = 10 * 365 * 24 * 60 * 60;
 
 export default class SVPlot {
     data = {};
@@ -41,7 +43,8 @@ export default class SVPlot {
                                 {
                                     tag: 'div',
                                     class: 'button',
-                                    text: 'SVG',
+                                    text: '⤓',
+                                    title: 'Download SVG',
                                     events: {
                                         click: () => downloadSVG(this.$svg),
                                     }
@@ -49,15 +52,17 @@ export default class SVPlot {
                                 {
                                     tag: 'div',
                                     class: 'button',
-                                    text: 'Clear',
+                                    text: '⨉',
+                                    title: 'Clear',
                                     events: {
-                                        click: () => { this.data = {}, this._render() },
+                                        click: () => { this.data = {}, this._resetZ(), this._render() },
                                     }
                                 },
                                 {
                                     tag: 'div',
                                     class: 'button',
-                                    text: 'Fit',
+                                    title: 'Fit',
+                                    text: '⟷',
                                     events: {
                                         click: () => { this._resetZ(), this._fit(), this._render() },
                                     }
@@ -65,9 +70,11 @@ export default class SVPlot {
                                 {
                                     tag: 'div',
                                     class: 'button',
-                                    text: '➔',
+                                    text: '→',
+                                    title: 'Auto',
+                                    var: 'auto',
                                     events: {
-                                        click: () => this._resetZ(),
+                                        click: () => { this._resetZ(), this._auto(true), this._render() },
                                     }
                                 },
                             ]
@@ -88,31 +95,12 @@ export default class SVPlot {
                             height: '100%',
                         },
                         children: [
-                            {
-                                tag: 'g',
-                                var: 'grid',
-                            },
-                            {
-                                tag: 'g',
-                                var: 'cursor',
-                            },
-                            {
-                                tag: 'g',
-                                var: 'lines',
-                            },
-                            {
-                                tag: 'g',
-                                var: 'markers',
-                            },
-                            {
-                                tag: 'g',
-                                var: 'gtext',
-                            },
-                            {
-                                tag: 'g',
-                                var: 'tooltip',
-                                style: 'filter: opacity(0.9)'
-                            },
+                            { tag: 'g', var: 'grid' },
+                            { tag: 'g', var: 'cursor' },
+                            { tag: 'g', var: 'lines' },
+                            { tag: 'g', var: 'markers' },
+                            { tag: 'g', var: 'gtext' },
+                            { tag: 'g', var: 'tooltip', style: 'filter: opacity(0.9)' },
                         ]
                     }),
                 }
@@ -127,27 +115,26 @@ export default class SVPlot {
 
             switch (e.type) {
                 case 'zoom': {
-                    this._clearMarkers();
-                    let t = this.maxSecs;
+                    let limit = () => this.maxSecs = constrain(this.maxSecs, minRange, maxRange);
+                    let tmp = this.maxSecs;
                     if (e.touch) {
                         this.maxSecs -= e.zoom / (w / this.maxSecs / 2);
-                        this.tZero += (this.maxSecs - t) / 2;
-                    }
-                    else {
+                        limit();
+                        this.tZero += (this.maxSecs - tmp) / 2;
+                    } else {
                         this.maxSecs *= -e.zoom / 5 + 1;
-                        this.tZero += (this.maxSecs - t) * (1 - e.pos.x / w);
+                        limit();
+                        this.tZero += (this.maxSecs - tmp) * (1 - e.pos.x / w);
                     }
+                    if (this.auto) this._resetZ();
+                    this._clearMarkers();
                     this._render();
                 } break;
 
                 case 'drag':
                     this.tZero -= e.move.x / (w / this.maxSecs);
-                    this.auto = false;
+                    this._auto(false);
                     this._render();
-                    break;
-
-                case 'release':
-                    if (this.tZero >= this._lastT()) this._resetZ();
                     break;
 
                 case 'press':
@@ -158,15 +145,16 @@ export default class SVPlot {
                 case 'move':
                 case 'click': {
                     //#region cursor
-                    let u = (this.tZero - (1 - e.pos.x / w) * this.maxSecs) * 1000;
-                    let twidth = 130;
-                    let getDate = (u) => (new Date(u)).toISOString().split('T');
+                    let unix = (this.tZero - (1 - e.pos.x / w) * this.maxSecs) * 1000;
+                    let twidth = 150;
+                    let tx = constrain(e.pos.x, twidth / 2, w - twidth / 2);
+                    let getDate = (u) => date(u).toISOString().split('T');
 
                     Component.configSVG(this.$cursor, {
                         children_r: [
                             makeLine(e.pos.x, e.pos.x, timeline ? 0 : offsTop, h - offsBottom, this._getProp('--grid'), 1),
-                            makeRect(e.pos.x - twidth / 2, h - offsBottom, twidth, offsBottom, this._getProp('--grid'), { rx: 3 }),
-                            makeText(getDate(u).join(' ').slice(0, -5), e.pos.x, h - 3, this._getProp('--font'), 11, { 'text-anchor': 'middle' }),
+                            makeRect(tx - twidth / 2, h - offsBottom, twidth, offsBottom, this._getProp('--grid'), { rx: 3 }),
+                            makeText(getDate(unix).join(' ').slice(0, -3), tx, h - 3, this._getProp('--font'), 12, { 'text-anchor': 'middle' }),
                         ]
                     });
                     if (!this.points) break;
@@ -199,6 +187,7 @@ export default class SVPlot {
                     if (timeline) {
                         //#region timeline
                         if (e.type == 'click') {
+                            for (let p of this.points) p.rect.classList.remove('active');
                             for (let p of this.points) {
                                 if (e.pos.x >= p.x1 && e.pos.x <= p.x2 && e.pos.y >= p.y1 && e.pos.y <= p.y2) {
                                     let y = -ystep;
@@ -209,6 +198,8 @@ export default class SVPlot {
                                         txt('Stop', p.block.fstop, p.block.stop, y += ystep),
                                         makeText('Last: ' + (new Date(p.block.stop - p.block.start).toISOString().substring(11, 19)), 0, y += ystep, fcol, fsize),
                                     ]);
+                                    p.rect.classList.add('active');
+                                    break;
                                 }
                             }
                         }
@@ -217,13 +208,13 @@ export default class SVPlot {
                         let found = 0;
                         let keys = Object.keys(this.points).map(Number);
                         for (let i = 1; i < keys.length; i++) {
-                            if (keys[i] >= u) {
-                                found = keys[(keys[i] - u < u - keys[i - 1]) ? i : i - 1];
+                            if (keys[i] >= unix) {
+                                found = keys[(keys[i] - unix < unix - keys[i - 1]) ? i : i - 1];
                                 break;
                             }
                         }
 
-                        if (found) {
+                        if (found && this.points[found].y) {
                             let markers = this.points[found].y.map((y, i) => this._disabled(i) ? null : Component.makeSVG('circle', {
                                 attrs: {
                                     cx: this.points[found].x,
@@ -242,7 +233,7 @@ export default class SVPlot {
                             let y = -ystep;
                             makeTooltip([
                                 ...this.points[found].y.map((v, i) => makeText(
-                                    this.cfg.labels[i] + ': ' + this.data[found][i].toFixed(2),
+                                    (this.cfg.labels[i] ? this.cfg.labels[i] : i) + ': ' + this.data[found][i].toFixed(2),
                                     0,
                                     y += ystep,
                                     this._getCol(i),
@@ -251,7 +242,7 @@ export default class SVPlot {
                                     true
                                 )),
                                 makeText(getDate(found)[0], 0, y += ystep + 5, fcol, fsize),
-                                makeText(getDate(found)[1].slice(0, -3), 0, y += ystep, fcol, fsize),
+                                makeText(getDate(found)[1].slice(0, -2), 0, y += ystep, fcol, fsize),
                             ]);
                         }
                     } // type line
@@ -302,51 +293,92 @@ export default class SVPlot {
             })),
         });
 
-        // running
-        if (this.tmr) clearInterval(this.tmr);
-        if (this.cfg.type == 'running') {
-            this.tmr = setInterval(() => {
-                let v = Object.values(this.data).slice(-1)[0];
-                if (v) this.setData([...v]);
-            }, this.cfg.period);
-        }
+        if (this.tmr) clearTimeout(this.tmr);
         this._render();
     }
 
     //#region setData
     /**
      * @param {*} data 
-     * running     [y0, y1, ..]
-     * stack       [y0, y1, ..]
+     * running     [ y0, y1, .. ]
+     * stack       [ y0, y1, .. ]
      * plot        { x0:[y0, ..], .. }
-     * timeline    { x0:[y0, ..], .. }
+     * timeline    { x0:[y0, ..], .. } | { x0:{y0:state, y2:state}, .. }
      * @returns 
      */
     setData(data) {
-        if (typeof data !== 'object') return;
+        let arr = Array.isArray(data);
+        let cmp = (a1, a2) => a1 && a2 && a1.every((v, i) => v === a2[i]);
 
-        if (this.cfg.type == 'running' || this.cfg.type == 'stack') this.data[(new Date).getTime()] = data;
-        else {
-            for (let [key, val] of Object.entries(data)) {
-                key = Number(key);
-                let sec = (key < 99999999999) ? key * 1000 : key;
-                this.data[sec] = val;
-            }
+        switch (this.cfg.type) {
+            case 'running':
+                if (this.tmr) clearTimeout(this.tmr);
+                this.tmr = setTimeout(() => {
+                    let vals = Object.values(this.data);
+                    if (cmp(last(vals), last(vals, 2))) {
+                        delete this.data[last(Object.keys(this.data))];
+                    }
+                    this.setData([...last(vals)]);
+                }, this.cfg.period);
+
+            // fall
+            case 'stack':
+                if (!arr) return;
+                this.data[now()] = [...data];
+                break;
+
+            case 'timeline':
+                if (arr) return;
+
+                if (!Array.isArray(Object.values(data)[0])) {
+                    let axes = {};
+                    for (let t in data) {
+                        for (let ax in data[t]) axes[ax] = true;
+                    }
+                    let states = new Array(Object.keys(axes).length).fill(false);
+
+                    let vals = Object.values(this.data);
+                    if (vals.length) states = [...last(vals)];
+
+                    for (let t in data) {
+                        for (let ax in data[t]) states[ax] = data[t][ax];
+                        data[t] = [...states];
+                    }
+                }
+            // fall
+            default:
+                if (arr) return;
+                let lastv = Number(last(Object.keys(this.data)));
+
+                for (let key in data) {
+                    let t = Number(key);
+                    t = (t < 99999999999) ? t * 1000 : t;
+                    if (!lastv || lastv < t) this.data[t] = [...data[key]];
+                }
+                break;
         }
 
         if (!this.cfg.labels.length) {
-            let vals = Object.values(this.data)[0];
-            this.setConfig({ labels: vals.map((x, i) => 'Line ' + i) });
+            let vals = Object.values(this.data);
+            if (vals.length) this.setConfig({ labels: vals[0].map((x, i) => 'Line ' + i) });
         }
 
         if (!this.tZero) {
-            this.auto = true;
+            this._auto(true)
             this._fit();
         }
+
         if (this.auto) {
             this._resetZ();
             this._clearMarkers();
-        } else this._render();
+        }
+        this._render();
+    }
+
+    clearData() {
+        this.data = {};
+        this.tZero = 0;
+        this._render();
     }
 
     //#region _render
@@ -362,10 +394,10 @@ export default class SVPlot {
         let h = this.$svg.clientHeight;
         let keys = Object.keys(this.data).map(Number);
         let scale = (x, in_min, in_max) => map(x, in_min, in_max, h - offsBottom, offsTop);
-        let add = (i) => this.points[keys[i]] = this.data[keys[i]];
         let calcX = (t) => (w + (t / 1000 - this.tZero) * w / this.maxSecs);
 
         // collect
+        let add = (i) => this.points[keys[i]] = this.data[keys[i]];
         for (let i = 0; i < keys.length; i++) {
             if (this.points) {
                 add(i);
@@ -399,7 +431,7 @@ export default class SVPlot {
                         let state = this.points[t][ax];
 
                         if (start && !state) {
-                            active[active.length - 1].stop = t;
+                            last(active).stop = t;
                             start = 0;
                         }
                         if (!start && state) {
@@ -408,8 +440,8 @@ export default class SVPlot {
                         }
                     }
                     if (start) {
-                        let a = active[active.length - 1];
-                        a.stop = keys[keys.length - 1];
+                        let a = last(active);
+                        a.stop = last(keys);
                         a.fstop = true;
                     }
                     temp.push(active);
@@ -426,9 +458,11 @@ export default class SVPlot {
                     for (let b of temp[ax]) {
                         let x1 = calcX(b.start);
                         let x2 = calcX(b.stop);
-                        let y = csize * ax;
-                        this.$lines.appendChild(makeRect(x1, y, x2 - x1, bsize, this._getCol(ax), { rx: 3 }));
-                        this.points.push({ x1: x1, x2: x2, y1: y, y2: y + bsize, axis: ax, block: b });
+                        let y = csize * ax + (csize - bsize) / 2;
+                        let rect = makeRect(x1, y, x2 - x1, bsize, this._getCol(ax), { rx: 3 }, { class: 'tblock' });
+                        this.$lines.appendChild(rect);
+                        rect.style.setProperty('--active', getColorIdx(ax, 1, this._getColv() + 0.1));
+                        this.points.push({ x1: x1, x2: x2, y1: y, y2: y + bsize, axis: ax, block: b, rect: rect });
                     }
                 }
             } else {
@@ -453,11 +487,12 @@ export default class SVPlot {
                     for (let i in vals) {
                         if (this._disabled(i)) continue;
                         if (vals[i] > max) max = vals[i];
-                        else if (vals[i] < min) min = vals[i];
+                        if (vals[i] < min) min = vals[i];
                     }
                 }
 
                 if (min != 999999999) {
+
                     // lines
                     for (let t in this.points) {
                         let x = calcX(t);
@@ -544,14 +579,9 @@ export default class SVPlot {
     _getProp(name) {
         return window.getComputedStyle(this.$svp).getPropertyValue(name);
     }
-
     _resetZ() {
-        this.tZero = this._lastT();
-        this.auto = true;
-        this._render();
-    }
-    _lastT() {
-        return Number(Object.keys(this.data).slice(-1)[0] / 1000);
+        let keys = Object.keys(this.data);
+        this.tZero = (keys.length ? Number(keys.slice(-1)[0]) : now()) / 1000;
     }
     _clearMarkers() {
         this.$cursor.replaceChildren();
@@ -561,12 +591,20 @@ export default class SVPlot {
     _disabled(i) {
         return this.labels[i] && this.labels[i].classList.contains('tint');
     }
+    _getColv() {
+        return this.cfg.dark ? 0.55 : 0.47;
+    }
     _getCol(i) {
-        return getColorIdx(i, this.cfg.dark ? 0.55 : 0.47);
+        return getColorIdx(i, 0.6, this._getColv());
     }
     _fit() {
         let keys = Object.keys(this.data).map(Number);
-        if (keys.length > 2) this.maxSecs = (keys[keys.length - 1] - keys[0]) / 1000;
+        if (keys.length > 2) this.maxSecs = (last(keys) - keys[0]) / 1000;
+    }
+    _auto(state) {
+        if (this.auto == state) return;
+        this.auto = state;
+        state ? this.$auto.classList.add('active') : this.$auto.classList.remove('active');
     }
 
     labels = [];
@@ -583,21 +621,37 @@ function hsl2rgb(h, s, l) {
     let f = (n, k = (n + h / 30) % 12) => l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
     return 'rgb(' + Math.round(f(0) * 255) + ',' + Math.round(f(8) * 255) + ',' + Math.round(f(4) * 255) + ')';
 }
-function getColorIdx(idx, v) {
-    return hsl2rgb(idx * 260 + 0, 0.6, v);
+function getColorIdx(idx, s, v) {
+    return hsl2rgb(idx * 260 + 0, s, v);
 }
 function downloadSVG(svg) {
+    svg.style.width = svg.clientWidth + 'px';
+    svg.style.height = svg.clientHeight + 'px';
     let ser = new XMLSerializer();
     let link = document.createElement('a');
     link.href = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(ser.serializeToString(svg));
     link.download = 'plot.svg';
     link.click();
+    svg.style.width = '100%';
+    svg.style.height = '100%';
 }
 function map(x, in_min, in_max, out_min, out_max) {
-    if (in_max == in_min) return 0;
+    if (in_max == in_min) return out_min;
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-function makeRect(x, y, w, h, fill, attrs = {}) {
+function now() {
+    return (new Date()).getTime();
+}
+function date(unix) {
+    return new Date(unix - (new Date().getTimezoneOffset()) * 60000);
+}
+function constrain(x, min, max) {
+    return x < min ? min : (x > max ? max : x);
+}
+function last(arr, i = 1) {
+    return arr[arr.length - i];
+}
+function makeRect(x, y, w, h, fill, attrs = {}, props = {}) {
     return Component.makeSVG('rect', {
         attrs: {
             x: x,
@@ -607,6 +661,7 @@ function makeRect(x, y, w, h, fill, attrs = {}) {
             fill: fill,
             ...attrs,
         },
+        ...props,
     })
 }
 function makeText(text, x, y, fill, size, attrs = {}, bold = false) {

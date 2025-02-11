@@ -66,10 +66,21 @@
 .svp .button {
     display: inline-block;
     font-size: 13px;
-    /* padding: 3px 4px;
-    border: 1px solid var(--font);
-    border-radius: 7px; */
-    margin: 0 3px;
-    border-bottom: 1px solid var(--font);
     cursor: pointer;
+    padding: 3px 4px;
+    border: 1px solid var(--grid);
+    border-radius: 7px;
+    width: 18px;
+    text-align: center;
+}
+
+.svp .button.active {
+    border: 1px solid var(--font);
+}
+
+/* PLOT */
+.svp .tblock.active {
+    fill: var(--active);
+    stroke: black;
+    stroke-width: 3;
 }
