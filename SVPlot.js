@@ -20,7 +20,9 @@ export default class SVPlot {
      * @param {HTMLElement} parent 
      * @param {*} params dark: false, type: 'running|stack|plot|timeline', labels: [''], period: 200
      */
-    constructor(parent, params = {}) {
+    constructor(parent, params = {}, context = window) {
+        parent.style.overflow = 'hidden';
+
         Component.make('div', {
             context: this,
             parent: parent,
@@ -28,66 +30,131 @@ export default class SVPlot {
             var: 'svp',
             children: [
                 {
-                    tag: 'div',
                     class: 'menu',
                     children: [
                         {
-                            tag: 'div',
                             class: 'labels',
                             var: 'labels',
                         },
                         {
-                            tag: 'div',
-                            class: 'buttons',
+                            style: 'display:flex',
                             children: [
                                 {
-                                    tag: 'div',
-                                    class: 'button',
-                                    text: '⤓',
-                                    title: 'Download SVG',
-                                    events: {
-                                        click: () => downloadSVG(this.$svg),
-                                    }
+                                    class: 'buttons none',
+                                    var: 'buttons',
+                                    children: [
+                                        {
+                                            class: 'button',
+                                            child: makeIcon('M 2,12 H 22 M 2,12 6.2,16.2 M 2,12 6.2,7.7 M 22,12 17.7,7.7 M 22,12 17.7,16.2'),
+                                            events: {
+                                                click: () => this.fitData(),
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
+                                            text: '1s',
+                                            events: {
+                                                click: () => this._setMax(1),
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
+                                            text: '1m',
+                                            events: {
+                                                click: () => this._setMax(60),
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
+                                            text: '1h',
+                                            events: {
+                                                click: () => this._setMax(3600),
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
+                                            text: '1d',
+                                            events: {
+                                                click: () => this._setMax(86400),
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
+                                            text: '1w',
+                                            events: {
+                                                click: () => this._setMax(86400 * 7),
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
+                                            child: makeIcon('M3 21L21 3M3 21H9M3 21L3 15M21 3H15M21 3V9'),
+                                            var: 'fullscr',
+                                            events: {
+                                                click: () => {
+                                                    this.$svp.classList.toggle('fullscreen');
+                                                    this.$fullscr.classList.toggle('active');
+                                                }
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
+                                            child: makeIcon('M21 21H3M18 11L12 17M12 17L6 11M12 17V3'),
+                                            events: {
+                                                click: () => downloadSVG(this.$plot),
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
+                                            child: makeIcon('M18 6L6 18M6 6L18 18'),
+                                            events: {
+                                                click: () => this.clearData(),
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
+                                            child: makeIcon('M4 12H20M20 12L14 6M20 12L14 18'),
+                                            var: 'auto',
+                                            events: {
+                                                click: () => this.autoData(),
+                                            },
+                                        },
+                                    ]
                                 },
-                                {
-                                    tag: 'div',
-                                    class: 'button',
-                                    text: '⨉',
-                                    title: 'Clear',
-                                    events: {
-                                        click: () => { this.data = {}, this._resetZ(), this._render() },
+                            ],
+                        },
+                        {
+                            class: 'dots',
+                            child: {
+                                tag: 'svg',
+                                var: 'dots',
+                                style: 'width: 4.4px;height: 20px',
+                                children: [...Array(3).keys()].map(i => {
+                                    return {
+                                        tag: 'circle',
+                                        attrs: {
+                                            cx: 2.2,
+                                            cy: 2.2 + 7.5 * i,
+                                            r: 2.2,
+                                            fill: 'var(--font)',
+                                        }
                                     }
+                                }),
+                            },
+                            events: {
+                                click: () => {
+                                    this.$buttons.classList.toggle('none');
+                                    this.$labels.classList.toggle('none');
                                 },
-                                {
-                                    tag: 'div',
-                                    class: 'button',
-                                    title: 'Fit',
-                                    text: '⟷',
-                                    events: {
-                                        click: () => { this._resetZ(), this._fit(), this._render() },
-                                    }
-                                },
-                                {
-                                    tag: 'div',
-                                    class: 'button',
-                                    text: '→',
-                                    title: 'Auto',
-                                    var: 'auto',
-                                    events: {
-                                        click: () => { this._resetZ(), this._auto(true), this._render() },
-                                    }
-                                },
-                            ]
+                            },
                         },
                     ],
                 },
                 {
-                    tag: 'div',
                     class: 'svcont',
                     var: 'svcont',
                     child: Component.makeSVG('svg', {
                         context: this,
-                        var: 'svg',
+                        var: 'plot',
                         class: 'svg',
                         style: 'font-family: Verdana, sans-serif;pointer-events: none;',
                         attrs: {
@@ -109,8 +176,8 @@ export default class SVPlot {
 
         //#region DragBlock
         DragBlock(this.$svcont, (e) => {
-            let w = this.$svg.clientWidth;
-            let h = this.$svg.clientHeight;
+            let w = this.$plot.clientWidth;
+            let h = this.$plot.clientHeight;
             let timeline = this.cfg.type == 'timeline';
 
             switch (e.type) {
@@ -248,12 +315,18 @@ export default class SVPlot {
                     } // type line
                 } break;
             }
-        });
+        }, context);
 
-        this.maxSecs = this.$svg.clientWidth / 10;
-        this._resizeh = this._render.bind(this);
-        this._resizer = new ResizeObserver(this._resizeh).observe(this.$svg);
+        this.maxSecs = this.$plot.clientWidth / 10;
+        if (this.maxSecs < 30) this.maxSecs = 30;
         this.setConfig(params);
+
+        this._resizer = new ResizeObserver(() => { this._render(); });
+        this._resizer.observe(this.$plot);
+    }
+
+    release() {
+        this._resizer.disconnect();
     }
 
     //#region setConfig
@@ -264,7 +337,8 @@ export default class SVPlot {
     setConfig(params) {
         this.cfg = { ...this.cfg, ...params };
         this.$svp.className = 'svp ' + (this.cfg.dark ? 'dark' : 'light');
-        this.$svg.style.background = this._getProp('--back');
+        this.$plot.style.background = this._getProp('--back');
+
         this.labels = [];
 
         Component.config(this.$labels, {
@@ -273,7 +347,6 @@ export default class SVPlot {
                 push: this.labels,
                 children: [
                     {
-                        tag: 'div',
                         class: 'marker',
                         style: `background:${this._getCol(i)}`,
                     },
@@ -297,6 +370,23 @@ export default class SVPlot {
         this._render();
     }
 
+    //#region config data
+    clearData() {
+        this.data = {};
+        this.tZero = now() / 1000 | 0;
+        this._render();
+    }
+    fitData() {
+        this._resetZ();
+        this._fit();
+        this._render();
+    }
+    autoData() {
+        this._resetZ();
+        this._auto(true);
+        this._render();
+    }
+
     //#region setData
     /**
      * @param {*} data 
@@ -315,6 +405,8 @@ export default class SVPlot {
                 if (this.tmr) clearTimeout(this.tmr);
                 this.tmr = setTimeout(() => {
                     let vals = Object.values(this.data);
+                    if (vals.length < 2) return;
+
                     if (cmp(last(vals), last(vals, 2))) {
                         delete this.data[last(Object.keys(this.data))];
                     }
@@ -352,7 +444,7 @@ export default class SVPlot {
 
                 for (let key in data) {
                     let t = Number(key);
-                    t = (t < 99999999999) ? t * 1000 : t;
+                    t = Math.floor((t < 99999999999) ? t * 1000 : t);
                     if (!lastv || lastv < t) this.data[t] = [...data[key]];
                 }
                 break;
@@ -375,12 +467,6 @@ export default class SVPlot {
         this._render();
     }
 
-    clearData() {
-        this.data = {};
-        this.tZero = 0;
-        this._render();
-    }
-
     //#region _render
     _render() {
         this.$lines.replaceChildren();
@@ -390,8 +476,10 @@ export default class SVPlot {
 
         if (!this.tZero) return;
 
-        let w = this.$svg.clientWidth;
-        let h = this.$svg.clientHeight;
+        let w = this.$plot.clientWidth;
+        let h = this.$plot.clientHeight;
+        if (h < 50) return;
+
         let keys = Object.keys(this.data).map(Number);
         let scale = (x, in_min, in_max) => map(x, in_min, in_max, h - offsBottom, offsTop);
         let calcX = (t) => (w + (t / 1000 - this.tZero) * w / this.maxSecs);
@@ -567,7 +655,7 @@ export default class SVPlot {
                     children: [
                         makeLine(0, w, h - offsBottom, h - offsBottom, this._getProp('--grid'), 1.5),
                         makeLine(x, x, h - offsBottom - 6, h - offsBottom - 1, this._getProp('--grid'), 2),
-                        makeText(ts, x, h - offsBottom + 14, this._getProp('--font'), 12, { 'text-anchor': 'middle' }),
+                        makeText(ts, x, h - offsBottom + 14, this._getProp('--font'), 11, { 'text-anchor': 'middle' }),
                     ],
                 });
             }
@@ -605,6 +693,10 @@ export default class SVPlot {
         if (this.auto == state) return;
         this.auto = state;
         state ? this.$auto.classList.add('active') : this.$auto.classList.remove('active');
+    }
+    _setMax(s) {
+        this.maxSecs = s;
+        this._render();
     }
 
     labels = [];
@@ -689,4 +781,23 @@ function makeLine(x1, x2, y1, y2, stroke, strokew, attrs = {}) {
             ...attrs,
         },
     })
+}
+function makeIcon(d) {
+    return Component.makeSVG('svg', {
+        style: 'width: 18px;height: 18px',
+        attrs: {
+            viewBox: "0 0 24 24",
+        },
+        child: {
+            tag: 'path',
+            attrs: {
+                d: d,
+                fill: 'none',
+                stroke: 'var(--font)',
+                'stroke-width': 2,
+                'stroke-linecap': 'round',
+                'stroke-linejoin': 'round',
+            }
+        }
+    });
 }

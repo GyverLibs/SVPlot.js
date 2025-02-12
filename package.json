@@ -1,6 +1,6 @@
 {
   "name": "@alexgyver/svplot",
-  "version": "0.0.5",
+  "version": "0.1.1",
   "description": "Tiny chart plotter",
   "main": "./SVPlot.js",
   "module": "./SVPlot.js",
@@ -12,7 +12,7 @@
   "author": "AlexGyver <alex@alexgyver.ru>",
   "license": "MIT",
   "dependencies": {
-    "@alexgyver/component": "^1.2.2",
-    "@alexgyver/drag-block": "^1.2.4"
+    "@alexgyver/component": "^1.2.7",
+    "@alexgyver/drag-block": "^1.2.10"
   }
 }
