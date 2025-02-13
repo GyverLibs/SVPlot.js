@@ -127,14 +127,14 @@ export default class SVPlot {
                             child: {
                                 tag: 'svg',
                                 var: 'dots',
-                                style: 'width: 4.4px;height: 20px',
+                                style: 'width: 4px;height: 18px',
                                 children: [...Array(3).keys()].map(i => {
                                     return {
                                         tag: 'circle',
                                         attrs: {
-                                            cx: 2.2,
-                                            cy: 2.2 + 7.5 * i,
-                                            r: 2.2,
+                                            cx: 2,
+                                            cy: 2 + 7 * i,
+                                            r: 2,
                                             fill: 'var(--font)',
                                         }
                                     }

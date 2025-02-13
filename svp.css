@@ -72,8 +72,7 @@
     all: unset;
     display: flex;
     align-items: stretch;
-    gap: 5px;
-    padding-left: 2px;
+    gap: 4px;
     flex-wrap: wrap;
 }
 
