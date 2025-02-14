@@ -98,7 +98,7 @@ export default class SVPlot {
                                                 click: () => this._setMax(86400 * 7),
                                             }
                                         }, {
-                                            class: 'touchdrag button' + (isTouch() ? '' : ' none'),
+                                            class: ['touchdrag', 'button', (!isTouch() && 'none')],
                                             var: 'touchdrag',
                                             child: makeIcon('M6.9 11.4v2.8m0-2.8V4.8c0-.92.8-1.7 1.7-1.7s1.7.7 1.7 1.7m-3.4 6.7c0-.92-.8-1.7-1.7-1.7s-1.7.7-1.7 1.7v2.2C3.5 18.3 7.3 22 12 22s8.5-3.7 8.5-8.3V8c0-.92-.8-1.7-1.7-1.7s-1.7.7-1.7 1.7m-6.8-3.3v6.11m0-6.11V3.7C10.3 2.747 11 2 12 2s1.7.8 1.7 1.7v1.11m0 0v6.1m0-6c0-.92.8-1.7 1.7-1.7s1.7.7 1.7 1.7V8.11m0 0v2.8'),
                                             events: {
