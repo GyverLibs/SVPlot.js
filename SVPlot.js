@@ -1,5 +1,6 @@
-import { Component } from '@alexgyver/component';
+import { Component, SVG } from '@alexgyver/component';
 import DragBlock from '@alexgyver/drag-block';
+import { constrain, download, hsl2rgb, isTouch, last, localTime, LS, map, now, waitFrame } from '@alexgyver/utils';
 import './svp.css'
 
 const offsTop = 16;
@@ -14,6 +15,7 @@ const maxRange = 10 * 365 * 24 * 60 * 60;
 export default class SVPlot {
     data = {};
     cfg = { dark: false, type: 'plot', labels: [], period: 200 };
+    static touchdrag = true;
 
     /**
      * 
@@ -52,6 +54,17 @@ export default class SVPlot {
                                         },
                                         {
                                             class: 'button',
+                                            var: 'single',
+                                            child: makeIcon('M17 4V20M17 20L13 16M17 20L21 16M7 20V4M7 4L3 8M7 4L11 8'),
+                                            events: {
+                                                click: () => {
+                                                    this.$single.classList.toggle('active');
+                                                    this._render();
+                                                }
+                                            }
+                                        },
+                                        {
+                                            class: 'button',
                                             text: '1s',
                                             events: {
                                                 click: () => this._setMax(1),
@@ -84,6 +97,17 @@ export default class SVPlot {
                                             events: {
                                                 click: () => this._setMax(86400 * 7),
                                             }
+                                        }, {
+                                            class: 'touchdrag button' + (isTouch() ? '' : ' none'),
+                                            var: 'touchdrag',
+                                            child: makeIcon('M6.9 11.4v2.8m0-2.8V4.8c0-.92.8-1.7 1.7-1.7s1.7.7 1.7 1.7m-3.4 6.7c0-.92-.8-1.7-1.7-1.7s-1.7.7-1.7 1.7v2.2C3.5 18.3 7.3 22 12 22s8.5-3.7 8.5-8.3V8c0-.92-.8-1.7-1.7-1.7s-1.7.7-1.7 1.7m-6.8-3.3v6.11m0-6.11V3.7C10.3 2.747 11 2 12 2s1.7.8 1.7 1.7v1.11m0 0v6.1m0-6c0-.92.8-1.7 1.7-1.7s1.7.7 1.7 1.7V8.11m0 0v2.8'),
+                                            events: {
+                                                click: () => {
+                                                    Array.from(document.querySelectorAll('.svp .touchdrag')).map(el => el.classList.toggle('active'));
+                                                    SVPlot.touchdrag = this.$touchdrag.classList.contains('active');
+                                                    LS.set('svp_touchdrag', SVPlot.touchdrag);
+                                                }
+                                            },
                                         },
                                         {
                                             class: 'button',
@@ -152,8 +176,8 @@ export default class SVPlot {
                 {
                     class: 'svcont',
                     var: 'svcont',
-                    child: Component.makeSVG('svg', {
-                        context: this,
+                    child: {
+                        tag: 'svg',
                         var: 'plot',
                         class: 'svg',
                         style: 'font-family: Verdana, sans-serif;pointer-events: none;',
@@ -169,16 +193,21 @@ export default class SVPlot {
                             { tag: 'g', var: 'gtext' },
                             { tag: 'g', var: 'tooltip', style: 'filter: opacity(0.9)' },
                         ]
-                    }),
+                    },
                 }
             ],
         });
+
+        if (LS.has('svp_touchdrag')) SVPlot.touchdrag = LS.get('svp_touchdrag');
+        if (SVPlot.touchdrag) this.$touchdrag.classList.add('active');
 
         //#region DragBlock
         DragBlock(this.$svcont, (e) => {
             let w = this.$plot.clientWidth;
             let h = this.$plot.clientHeight;
             let timeline = this.cfg.type == 'timeline';
+
+            if (isTouch() && SVPlot.touchdrag && e.type === 'move') e.type = 'drag';
 
             switch (e.type) {
                 case 'zoom': {
@@ -205,6 +234,7 @@ export default class SVPlot {
                     break;
 
                 case 'press':
+                case 'tpress':
                 case 'leave':
                     this._clearMarkers();
                     break;
@@ -215,12 +245,12 @@ export default class SVPlot {
                     let unix = (this.tZero - (1 - e.pos.x / w) * this.maxSecs) * 1000;
                     let twidth = 150;
                     let tx = constrain(e.pos.x, twidth / 2, w - twidth / 2);
-                    let getDate = (u) => date(u).toISOString().split('T');
+                    let getDate = (u) => localTime(u).toISOString().split('T');
 
-                    Component.configSVG(this.$cursor, {
+                    SVG.config(this.$cursor, {
                         children_r: [
-                            makeLine(e.pos.x, e.pos.x, timeline ? 0 : offsTop, h - offsBottom, this._getProp('--grid'), 1),
-                            makeRect(tx - twidth / 2, h - offsBottom, twidth, offsBottom, this._getProp('--grid'), { rx: 3 }),
+                            makeLine(e.pos.x, timeline ? 0 : offsTop, e.pos.x, h - offsBottom, this._getProp('--grid'), 1),
+                            SVG.rect(tx - twidth / 2, h - offsBottom, twidth, offsBottom, 3, 0, { fill: this._getProp('--grid') }),
                             makeText(getDate(unix).join(' ').slice(0, -3), tx, h - 3, this._getProp('--font'), 12, { 'text-anchor': 'middle' }),
                         ]
                     });
@@ -228,13 +258,11 @@ export default class SVPlot {
 
                     let makeTooltip = (data) => {
                         let pad = 4;
-                        let rect = Component.makeSVG('rect');
-                        Component.configSVG(this.$tooltip, {
-                            children_r: [rect, ...data]
-                        });
+                        let rect = SVG.make('rect');
+                        SVG.config(this.$tooltip, { children_r: [rect, ...data] });
 
                         let bb = this.$tooltip.getBBox();
-                        Component.configSVG(rect, {
+                        SVG.config(rect, {
                             attrs: {
                                 x: bb.x - pad,
                                 width: bb.width + pad * 2,
@@ -245,7 +273,7 @@ export default class SVPlot {
                                 stroke: this._getProp('--font'),
                             }
                         });
-                        Component.configSVG(this.$tooltip, {
+                        SVG.config(this.$tooltip, {
                             attrs: { transform: `translate(${w - 1 - bb.width - pad} ${18})` }
                         });
                     }
@@ -282,25 +310,23 @@ export default class SVPlot {
                         }
 
                         if (found && this.points[found].y) {
-                            let markers = this.points[found].y.map((y, i) => this._disabled(i) ? null : Component.makeSVG('circle', {
-                                attrs: {
-                                    cx: this.points[found].x,
-                                    cy: y,
-                                    r: 4,
-                                    stroke: this._getCol(i),
-                                    fill: this._getProp('--back'),
-                                    'stroke-width': 2,
-                                },
-                            }));
+                            SVG.config(this.$markers, {
+                                children_r: this.points[found].y.map((y, i) => {
+                                    if (this._disabled(i)) return null;
 
-                            Component.configSVG(this.$markers, {
-                                children_r: markers,
+                                    return SVG.circle(this.points[found].x, y, 4,
+                                        {
+                                            stroke: this._getCol(i),
+                                            fill: this._getProp('--back'),
+                                            'stroke-width': 2
+                                        });
+                                }),
                             });
 
                             let y = -ystep;
                             makeTooltip([
                                 ...this.points[found].y.map((v, i) => makeText(
-                                    (this.cfg.labels[i] ? this.cfg.labels[i] : i) + ': ' + this.data[found][i].toFixed(2),
+                                    `${this.cfg.labels[i] ?? i}: ${this.data[found][i].toFixed(2)}${this.units[i] ?? ''}`,
                                     0,
                                     y += ystep,
                                     this._getCol(i),
@@ -321,7 +347,10 @@ export default class SVPlot {
         if (this.maxSecs < 30) this.maxSecs = 30;
         this.setConfig(params);
 
-        this._resizer = new ResizeObserver(() => { this._render(); });
+        this._resizer = new ResizeObserver(async () => {
+            await waitFrame();
+            this._render();
+        });
         this._resizer.observe(this.$plot);
     }
 
@@ -338,6 +367,15 @@ export default class SVPlot {
         this.cfg = { ...this.cfg, ...params };
         this.$svp.className = 'svp ' + (this.cfg.dark ? 'dark' : 'light');
         this.$plot.style.background = this._getProp('--back');
+
+        this.units = [];
+        this.cfg.labels = this.cfg.labels.map(l => {
+            let unit = '';
+            let res = l.match(/(.*)\[(.*)\]$/);
+            if (res) l = res[1], unit = res[2];
+            this.units.push(unit);
+            return l;
+        });
 
         this.labels = [];
 
@@ -547,7 +585,7 @@ export default class SVPlot {
                         let x1 = calcX(b.start);
                         let x2 = calcX(b.stop);
                         let y = csize * ax + (csize - bsize) / 2;
-                        let rect = makeRect(x1, y, x2 - x1, bsize, this._getCol(ax), { rx: 3 }, { class: 'tblock' });
+                        let rect = SVG.rect(x1, y, x2 - x1, bsize, 3, 0, { fill: this._getCol(ax) }, { class: 'tblock' });
                         this.$lines.appendChild(rect);
                         rect.style.setProperty('--active', getColorIdx(ax, 1, this._getColv() + 0.1));
                         this.points.push({ x1: x1, x2: x2, y1: y, y2: y + bsize, axis: ax, block: b, rect: rect });
@@ -570,21 +608,31 @@ export default class SVPlot {
                 }
 
                 // scale
-                let max = -999999999, min = 999999999;
-                for (let vals of Object.values(this.points)) {
+                const maxv = 999999999;
+                let max = -maxv, min = maxv;
+                let maxs = {}, mins = {};
+                for (let t in this.points) {
+                    let vals = this.points[t];
                     for (let i in vals) {
                         if (this._disabled(i)) continue;
                         if (vals[i] > max) max = vals[i];
                         if (vals[i] < min) min = vals[i];
+                        if (!(i in maxs)) maxs[i] = -maxv;
+                        if (!(i in mins)) mins[i] = maxv;
+                        if (vals[i] > maxs[i]) maxs[i] = vals[i];
+                        if (vals[i] < mins[i]) mins[i] = vals[i];
                     }
                 }
 
-                if (min != 999999999) {
+                if (min != maxv) {
+                    let singleY = this.$single.classList.contains('active');
 
                     // lines
                     for (let t in this.points) {
                         let x = calcX(t);
-                        let y = this.points[t].map(v => scale(v, min, max));
+                        let y;
+                        if (singleY) y = this.points[t].map((v, i) => scale(v, mins[i], maxs[i]));
+                        else y = this.points[t].map(v => scale(v, min, max));
                         this.points[t] = { x: x, y: y };
                     }
 
@@ -594,28 +642,35 @@ export default class SVPlot {
                         let xy = '';
                         vals.forEach(v => xy += `${v.x},${v.y[ax]} `);
 
-                        Component.configSVG(this.$lines, {
-                            child: Component.makeSVG('polyline', {
-                                attrs: {
-                                    points: xy,
-                                    fill: 'none',
-                                    stroke: this._getCol(ax),
-                                    'stroke-width': 2,
-                                },
-                            }),
+                        SVG.config(this.$lines, {
+                            child: SVG.polyline(xy, { fill: 'none', stroke: this._getCol(ax), 'stroke-width': 2 }),
                         });
                     }
 
                     // grid
                     {
+                        const letsize = 9;
                         let am = Math.round(h / 80);
                         let dif = max - min;
                         let step = dif / am;
+                        let shadow = { filter: `drop-shadow(0 0 1px ${this._getProp('--back')})` };
 
                         for (let i = 0; i < am + 1; i++) {
                             let y = scale(max - step * i, min, max);
-                            if (i != am) this.$grid.appendChild(makeLine(0, w, y, y, this._getProp('--grid'), 1, { 'stroke-dasharray': '7 8' }));
-                            this.$gtext.appendChild(makeText((max - step * i).toFixed(1), 0, y - 5, this._getProp('--font'), 12));
+                            if (i != am) this.$grid.appendChild(makeLine(0, y, w, y, this._getProp('--grid'), 1, { 'stroke-dasharray': '7 8' }));
+                            if (!singleY) this.$gtext.appendChild(makeText((max - step * i).toFixed(1), 0, y - 5, this._getProp('--font'), 12, shadow));
+                        }
+
+                        if (singleY) {
+                            let x = 0;
+                            for (let ax in maxs) {
+                                ax = Number(ax);
+                                for (let i = 0; i < am + 1; i++) {
+                                    let y = scale(max - step * i, min, max);
+                                    this.$gtext.appendChild(makeText((maxs[ax] - (maxs[ax] - mins[ax]) / am * i).toFixed(1), x, y - 5, this._getCol(ax), 12, shadow));
+                                }
+                                x += Math.max((maxs[ax].toFixed(1)).length, (mins[ax].toFixed(1)).length) * letsize;
+                            }
                         }
                     }
                 } // min != 999999999
@@ -651,10 +706,10 @@ export default class SVPlot {
                     new Date(t * 1000).toTimeString().split(' ')[0] :
                     new Date(t * 1000).toISOString().split('T')[0];
 
-                Component.configSVG(this.$grid, {
+                SVG.config(this.$grid, {
                     children: [
-                        makeLine(0, w, h - offsBottom, h - offsBottom, this._getProp('--grid'), 1.5),
-                        makeLine(x, x, h - offsBottom - 6, h - offsBottom - 1, this._getProp('--grid'), 2),
+                        makeLine(0, h - offsBottom, w, h - offsBottom, this._getProp('--grid'), 1.5),
+                        makeLine(x, h - offsBottom - 6, x, h - offsBottom - 1, this._getProp('--grid'), 2),
                         makeText(ts, x, h - offsBottom + 14, this._getProp('--font'), 11, { 'text-anchor': 'middle' }),
                     ],
                 });
@@ -700,6 +755,7 @@ export default class SVPlot {
     }
 
     labels = [];
+    units = [];
     points = null;
     tZero = 0;
     maxSecs = 10;
@@ -707,15 +763,6 @@ export default class SVPlot {
 }
 
 //#region function
-function hsl2rgb(h, s, l) {
-    h %= 360;
-    let a = s * Math.min(l, 1 - l);
-    let f = (n, k = (n + h / 30) % 12) => l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return 'rgb(' + Math.round(f(0) * 255) + ',' + Math.round(f(8) * 255) + ',' + Math.round(f(4) * 255) + ')';
-}
-function getColorIdx(idx, s, v) {
-    return hsl2rgb(idx * 260 + 0, s, v);
-}
 function downloadSVG(svg) {
     svg.style.width = svg.clientWidth + 'px';
     svg.style.height = svg.clientHeight + 'px';
@@ -727,77 +774,25 @@ function downloadSVG(svg) {
     svg.style.width = '100%';
     svg.style.height = '100%';
 }
-function map(x, in_min, in_max, out_min, out_max) {
-    if (in_max == in_min) return out_min;
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-function now() {
-    return (new Date()).getTime();
-}
-function date(unix) {
-    return new Date(unix - (new Date().getTimezoneOffset()) * 60000);
-}
-function constrain(x, min, max) {
-    return x < min ? min : (x > max ? max : x);
-}
-function last(arr, i = 1) {
-    return arr[arr.length - i];
-}
-function makeRect(x, y, w, h, fill, attrs = {}, props = {}) {
-    return Component.makeSVG('rect', {
-        attrs: {
-            x: x,
-            width: w,
-            y: y,
-            height: h,
-            fill: fill,
-            ...attrs,
-        },
-        ...props,
-    })
-}
-function makeText(text, x, y, fill, size, attrs = {}, bold = false) {
-    return Component.makeSVG('text', {
-        text: text,
-        style: `font-size: ${size}px;font-weight:${bold ? 'bold' : 'unset'}`,
-        attrs: {
-            x: x,
-            y: y,
-            fill: fill,
-            ...attrs,
-        },
-    })
-}
-function makeLine(x1, x2, y1, y2, stroke, strokew, attrs = {}) {
-    return Component.makeSVG('line', {
-        attrs: {
-            x1: x1,
-            x2: x2,
-            y1: y1,
-            y2: y2,
-            stroke: stroke,
+
+const getColorIdx = (idx, s, v) => hsl2rgb(idx * 260 + 0, s, v);
+
+const makeText = (text, x, y, fill, size, attrs = {}, bold = false) => SVG.text(text, x, y,
+    { fill: fill, ...attrs },
+    { style: `font-size: ${size}px;font-weight:${bold ? 'bold' : 'unset'}` });
+
+const makeLine = (x1, y1, x2, y2, stroke, strokew, attrs = {}) => SVG.line(x1, y1, x2, y2,
+    { stroke: stroke, fill: 'none', 'stroke-width': strokew, ...attrs });
+
+const makeIcon = (d) => SVG.svg(
+    { viewBox: "0 0 24 24" },
+    {
+        style: 'width:24px;height:24px',
+        child: SVG.path(d, {
             fill: 'none',
-            'stroke-width': strokew,
-            ...attrs,
-        },
-    })
-}
-function makeIcon(d) {
-    return Component.makeSVG('svg', {
-        style: 'width: 18px;height: 18px',
-        attrs: {
-            viewBox: "0 0 24 24",
-        },
-        child: {
-            tag: 'path',
-            attrs: {
-                d: d,
-                fill: 'none',
-                stroke: 'var(--font)',
-                'stroke-width': 2,
-                'stroke-linecap': 'round',
-                'stroke-linejoin': 'round',
-            }
-        }
+            stroke: 'var(--font)',
+            'stroke-width': 2,
+            'stroke-linecap': 'round',
+            'stroke-linejoin': 'round',
+        }),
     });
-}

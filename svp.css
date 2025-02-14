@@ -20,7 +20,7 @@
     flex-direction: column;
     color: var(--font);
     user-select: none;
-    padding: 5px;
+    padding: 4px;
     box-sizing: border-box;
 }
 
@@ -43,7 +43,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 0;
+    padding: 5px 3px;
+    min-height: 24px;
 }
 
 .svp .label {
@@ -51,10 +52,9 @@
     display: inline-flex;
     vertical-align: middle;
     align-items: center;
-    padding: 0 7px;
+    padding-right: 7px;
     font-size: 14px;
     cursor: pointer;
-    height: 24px;
 }
 
 .svp .label.tint {
@@ -72,12 +72,8 @@
     all: unset;
     display: flex;
     align-items: stretch;
-    gap: 4px;
+    gap: 3px;
     flex-wrap: wrap;
-}
-
-.svp .button.active {
-    border: 1px solid var(--font);
 }
 
 .svp .tblock.active {
@@ -94,10 +90,14 @@
     cursor: pointer;
     border: 1px solid var(--grid);
     border-radius: 7px;
-    padding: 1px;
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
+    padding: 2px;
+    width: 16px;
+    height: 16px;
+    font-size: 11px;
+}
+
+.svp .button.active {
+    border: 1px solid var(--font);
 }
 
 .svp .button:hover {
@@ -110,9 +110,9 @@
 
 .svp .dots {
     all: unset;
-    width: 23px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    padding-left: 7px;
 }
