@@ -1,0 +1,18 @@
+html,
+body {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    background: #333;
+}
+
+.cvcont {
+    overflow: hidden;
+    resize: vertical;
+    /* background: red; */
+    max-width: 600px;
+    height: 300px;
+    /* padding: 10px;
+    box-sizing: border-box; */
+}

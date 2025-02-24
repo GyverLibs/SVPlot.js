@@ -1,13 +1,13 @@
-import SVPlot from "@alexgyver/svplot";
+import SVPlot from "../dist/SVPlot.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     let rnd = () => Math.random() * 100 - 50;
     let dark = true;
     let i = 0;
-    dark = false;
+    // dark = false;
 
     let unix = () => (new Date()).getTime() / 1000;
-
+    
     let plot1 = new SVPlot(document.getElementById('plot1'), { type: 'running', dark: dark, period: 200 });
     plot1.setConfig({ labels: ['abc', 'def', 'kek'] });
     setInterval(() => {

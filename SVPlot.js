@@ -1,7 +1,7 @@
 import { Component, SVG } from '@alexgyver/component';
 import DragBlock from '@alexgyver/drag-block';
-import { constrain, download, hsl2rgb, isTouch, last, localTime, LS, map, now, waitFrame } from '@alexgyver/utils';
-import './svp.css'
+import { addStyle, constrain, hsl2rgb, isTouch, last, localTime, LS, map, now, waitFrame } from '@alexgyver/utils';
+// import './svp.css'
 
 const offsTop = 16;
 const offsBottom = 15;
@@ -23,6 +23,11 @@ export default class SVPlot {
      * @param {*} params dark: false, type: 'running|stack|plot|timeline', labels: [''], period: 200
      */
     constructor(parent, params = {}, context = window) {
+        if (SVPlot.css) {
+            addStyle(SVPlot.css);
+            SVPlot.css = null;
+        }
+
         parent.style.overflow = 'hidden';
 
         Component.make('div', {
@@ -760,6 +765,9 @@ export default class SVPlot {
     tZero = 0;
     maxSecs = 10;
     auto = false;
+
+    // https://www.minifier.org/
+    static css = `.svp.light{--back:#fff;--font:#111;--grid:#cacaca}.svp.dark{--back:#1c1d22;--font:#c3c3c3;--grid:#4a4a4a}.svp{all:unset;font-family:Verdana,sans-serif;background:var(--back);height:100%;width:100%;display:flex;flex-direction:column;color:var(--font);user-select:none;padding:4px;box-sizing:border-box}.svp.fullscreen{position:fixed;left:0;top:0}.svp .svcont{width:100%;height:100%;overflow:hidden;touch-action:none}.svp .menu{all:unset;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:5px 3px;min-height:24px}.svp .label{all:unset;display:inline-flex;vertical-align:middle;align-items:center;padding-right:7px;font-size:14px;cursor:pointer}.svp .label.tint{filter:opacity(.4)}.svp .label .marker{all:unset;width:7px;height:7px;margin-right:6px}.svp .buttons{all:unset;display:flex;align-items:stretch;gap:3px;flex-wrap:wrap}.svp .tblock.active{fill:var(--active);stroke:#000;stroke-width:3}.svp .button{all:unset;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--grid);border-radius:7px;padding:2px;width:16px;height:16px;font-size:11px}.svp .button.active{border:1px solid var(--font)}.svp .button:hover{border:1px solid var(--font)}.svp .none{display:none}.svp .dots{all:unset;display:flex;align-items:center;justify-content:center;cursor:pointer;padding-left:7px}`;
 }
 
 //#region function
