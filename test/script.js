@@ -1,4 +1,4 @@
-import SVPlot from "https://gyverlibs.github.io/SVPlot.js/dist/SVPlot.js";
+import SVPlot from "https://gyverlibs.github.io/SVPlot.js/SVPlot.min.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     let rnd = () => Math.random() * 100 - 50;

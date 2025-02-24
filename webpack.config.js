@@ -1,10 +1,8 @@
-var path = require('path');
-
 module.exports = {
     entry: './SVPlot.js',
     output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: 'SVPlot.js',
+        path: __dirname,
+        filename: 'SVPlot.min.js',
         library: {
             type: 'module'
         }
