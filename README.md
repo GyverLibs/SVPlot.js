@@ -1,2 +1,4 @@
 # SVPlot.js
- Tiny chart plotter
+Tiny chart plotter
+
+[demo](https://gyverlibs.github.io/SVPlot.js/test/)
