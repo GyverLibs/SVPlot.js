@@ -10,9 +10,6 @@ body {
 .cvcont {
     overflow: hidden;
     resize: vertical;
-    /* background: red; */
     max-width: 600px;
     height: 300px;
-    /* padding: 10px;
-    box-sizing: border-box; */
 }
