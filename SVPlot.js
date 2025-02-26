@@ -291,12 +291,12 @@ export default class SVPlot {
                             for (let p of this.points) {
                                 if (e.pos.x >= p.x1 && e.pos.x <= p.x2 && e.pos.y >= p.y1 && e.pos.y <= p.y2) {
                                     let y = -ystep;
-                                    let txt = (lbl, f, u, y) => makeText(lbl + ': ' + (f ? 'unknown' : getDate(u).join(' ').slice(0, -5)), 0, y, fcol, fsize);
+                                    let txt = (lbl, f, u, y) => makeText(lbl + ': ' + (f ? '-' : getDate(u).join(' ').slice(0, -5)), 0, y, fcol, fsize);
                                     makeTooltip([
                                         makeText(this.cfg.labels[p.axis], 0, y += ystep, this._getCol(p.axis), fsize, {}, true),
                                         txt('Start', p.block.fstart, p.block.start, y += ystep + 3),
                                         txt('Stop', p.block.fstop, p.block.stop, y += ystep),
-                                        makeText('Last: ' + (new Date(p.block.stop - p.block.start).toISOString().substring(11, 19)), 0, y += ystep, fcol, fsize),
+                                        makeText('Duration: ' + (new Date(p.block.stop - p.block.start).toISOString().substring(11, 19)), 0, y += ystep, fcol, fsize),
                                     ]);
                                     p.rect.classList.add('active');
                                     break;
@@ -459,7 +459,7 @@ export default class SVPlot {
             // fall
             case 'stack':
                 if (!arr) return;
-                this.data[now()] = [...data];
+                this.data[now()] = data.map(Number);
                 break;
 
             case 'timeline':
@@ -488,7 +488,7 @@ export default class SVPlot {
                 for (let key in data) {
                     let t = Number(key);
                     t = Math.floor((t < 99999999999) ? t * 1000 : t);
-                    if (!lastv || lastv < t) this.data[t] = [...data[key]];
+                    if (!lastv || lastv < t) this.data[t] = data[key].map(Number);
                 }
                 break;
         }
