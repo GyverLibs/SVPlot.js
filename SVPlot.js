@@ -1,6 +1,6 @@
 import { Component, SVG } from '@alexgyver/component';
 import DragBlock from '@alexgyver/drag-block';
-import { addStyle, constrain, hsl2rgb, isTouch, last, localTime, LS, map, now, waitFrame } from '@alexgyver/utils';
+import { addStyle, constrain, hsl2rgb, last, localTime, map, now, waitFrame } from '@alexgyver/utils';
 // import './svp.css'
 
 const offsTop = 16;
@@ -15,7 +15,8 @@ const maxRange = 10 * 365 * 24 * 60 * 60;
 export default class SVPlot {
     data = {};
     cfg = { dark: false, type: 'plot', labels: [], period: 200 };
-    static touchdrag = true;
+    sel_mode = false;
+    pressX = 0;
 
     /**
      * 
@@ -103,14 +104,13 @@ export default class SVPlot {
                                                 click: () => this._setMax(86400 * 7),
                                             }
                                         }, {
-                                            class: ['touchdrag', 'button', (!isTouch() && 'none')],
-                                            var: 'touchdrag',
-                                            child: makeIcon('M6.9 11.4v2.8m0-2.8V4.8c0-.92.8-1.7 1.7-1.7s1.7.7 1.7 1.7m-3.4 6.7c0-.92-.8-1.7-1.7-1.7s-1.7.7-1.7 1.7v2.2C3.5 18.3 7.3 22 12 22s8.5-3.7 8.5-8.3V8c0-.92-.8-1.7-1.7-1.7s-1.7.7-1.7 1.7m-6.8-3.3v6.11m0-6.11V3.7C10.3 2.747 11 2 12 2s1.7.8 1.7 1.7v1.11m0 0v6.1m0-6c0-.92.8-1.7 1.7-1.7s1.7.7 1.7 1.7V8.11m0 0v2.8'),
+                                            class: ['sel_mode', 'button'],
+                                            var: 'sel_mode',
+                                            child: makeIcon('M4.4 3.4c-.5-.1-.7-.2-.84-.14a.5.5 0 0 0-.3.3c-.1.16.0.4.14.84l4.21 14.3c.13.4.2.64.3.7a.5.5 0 0 0 .4.1c.16-.03.3-.2.6-.5L12 16l4.4 4.4.2.2.3.3.4.3a.5.5 0 0 0 .31 0c.1-.0.2-.14.41-.3l2.9-2.9c.2-.2.3-.3.3-.41a.5.5 0 0 0 0-.31c-.1-.1-.1-.2-.3-.41L16 12l3.1-3.1c.3-.3.47-.47.5-.63a.5.5 0 0 0-.1-.4c-.1-.13-.3-.2-.74-.31l-14.3-4.2Z'),
                                             events: {
                                                 click: () => {
-                                                    Array.from(document.querySelectorAll('.svp .touchdrag')).map(el => el.classList.toggle('active'));
-                                                    SVPlot.touchdrag = this.$touchdrag.classList.contains('active');
-                                                    LS.set('svp_touchdrag', SVPlot.touchdrag);
+                                                    this.sel_mode = !this.sel_mode;
+                                                    this.$sel_mode.classList.toggle('active');
                                                 }
                                             },
                                         },
@@ -196,6 +196,12 @@ export default class SVPlot {
                             { tag: 'g', var: 'lines' },
                             { tag: 'g', var: 'markers' },
                             { tag: 'g', var: 'gtext' },
+                            {
+                                tag: 'g', var: 'dur', children: [
+                                    { tag: 'rect', var: 'dur_rect', attrs: { y: offsTop - 1, width: 0, stroke: 'none', fill: 'black' }, style: 'filter: opacity(0.3)' },
+                                    { tag: 'text', var: 'dur_text', attrs: { y: offsTop - 5, fill: '--font', 'text-anchor': 'middle' }, style: 'font-size: 13px' },
+                                ]
+                            },
                             { tag: 'g', var: 'tooltip', style: 'filter: opacity(0.9)' },
                         ]
                     },
@@ -203,16 +209,13 @@ export default class SVPlot {
             ],
         });
 
-        if (LS.has('svp_touchdrag')) SVPlot.touchdrag = LS.get('svp_touchdrag');
-        if (SVPlot.touchdrag) this.$touchdrag.classList.add('active');
-
         //#region DragBlock
         DragBlock(this.$svcont, (e) => {
             let w = this.$plot.clientWidth;
             let h = this.$plot.clientHeight;
             let timeline = this.cfg.type == 'timeline';
 
-            if (isTouch() && SVPlot.touchdrag && e.type === 'move') e.type = 'drag';
+            if (e.touch && e.type === 'move') e.type = 'drag';
 
             switch (e.type) {
                 case 'zoom': {
@@ -233,13 +236,41 @@ export default class SVPlot {
                 } break;
 
                 case 'drag':
-                    this.tZero -= e.move.x / (w / this.maxSecs);
-                    this._auto(false);
-                    this._render();
+                    if (this.sel_mode) {
+                        let durw = Math.abs(e.pos.x - this.pressX);
+                        let durx = Math.min(this.pressX, e.pos.x);
+                        let durs = durw / w * this.maxSecs;
+                        SVG.config(this.$dur_rect, {
+                            attrs: { x: Math.min(this.pressX, e.pos.x), width: durw }
+                        });
+                        SVG.config(this.$dur_text, {
+                            attrs: { x: durx + durw / 2, fill: this._getProp('--font') },
+                            text: Math.floor(durs / 86400) + ':' + new Date(durs * 1000).toISOString().slice(11, 22),
+                        });
+                    } else {
+                        this.tZero -= e.move.x / (w / this.maxSecs);
+                        this._auto(false);
+                        this._render();
+                    }
                     break;
 
                 case 'press':
                 case 'tpress':
+                    this._clearMarkers();
+                    this.pressX = e.pos.x;
+                    if (this.sel_mode) {
+                        SVG.config(this.$dur_rect, {
+                            attrs: { x: e.pos.x, width: 0, height: h - offsBottom - offsTop },
+                        });
+                        this.$dur.style.display = 'unset';
+                    }
+                    break;
+
+                case 'release':
+                case 'trelease':
+                    this.$dur.style.display = 'none';
+                    break;
+
                 case 'leave':
                     this._clearMarkers();
                     break;
