@@ -24,11 +24,7 @@ export default class SVPlot {
      * @param {*} params dark: false, type: 'running|stack|plot|timeline', labels: [''], period: 200
      */
     constructor(parent, params = {}, context = window) {
-        if (SVPlot.css) {
-            addStyle(SVPlot.css);
-            SVPlot.css = null;
-        }
-
+        SVPlot.css = addStyle(SVPlot.css);
         parent.style.overflow = 'hidden';
 
         EL.make('div', {
