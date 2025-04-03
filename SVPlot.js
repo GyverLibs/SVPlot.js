@@ -1,6 +1,6 @@
 import { EL, SVG } from '@alexgyver/component';
 import DragBlock from '@alexgyver/drag-block';
-import { addStyle, constrain, hsl2rgb, last, localTime, map, now, waitFrame } from '@alexgyver/utils';
+import { addStyle, constrain, hsl2rgb, last, localTime, map, now, waitFrame, waitRender } from '@alexgyver/utils';
 // import './svp.css'
 
 const offsTop = 16;
@@ -209,8 +209,9 @@ export default class SVPlot {
         DragBlock(this.$svcont, (e) => {
             let w = this.$plot.clientWidth;
             let h = this.$plot.clientHeight;
-            let timeline = this.cfg.type == 'timeline';
+            if (!w || !h) return;
 
+            let timeline = this.cfg.type == 'timeline';
             if (e.touch && e.type === 'move') e.type = 'drag';
 
             switch (e.type) {
@@ -375,15 +376,15 @@ export default class SVPlot {
             }
         }, context);
 
-        this.maxSecs = this.$plot.clientWidth / 10;
-        if (this.maxSecs < 30) this.maxSecs = 30;
         this.setConfig(params);
 
-        this._resizer = new ResizeObserver(async () => {
-            await waitFrame();
-            this._render();
-        });
+        this._resizer = new ResizeObserver(() => waitFrame().then(() => this._render()));
         this._resizer.observe(this.$plot);
+
+        waitRender(this.$plot, () => {
+            this.maxSecs = this.$plot.clientWidth / 10;
+            if (this.maxSecs < 30) this.maxSecs = 30;
+        });
     }
 
     release() {
@@ -539,9 +540,9 @@ export default class SVPlot {
 
     //#region _render
     _render() {
-        this.$lines.replaceChildren();
-        this.$grid.replaceChildren();
-        this.$gtext.replaceChildren();
+        EL.clear(this.$lines);
+        EL.clear(this.$grid);
+        EL.clear(this.$gtext);
         this.points = null;
 
         if (!this.tZero) return;
@@ -759,9 +760,9 @@ export default class SVPlot {
         this.tZero = (keys.length ? Number(keys.slice(-1)[0]) : now()) / 1000;
     }
     _clearMarkers() {
-        this.$cursor.replaceChildren();
-        this.$markers.replaceChildren();
-        this.$tooltip.replaceChildren();
+        EL.clear(this.$cursor);
+        EL.clear(this.$markers);
+        EL.clear(this.$tooltip);
     }
     _disabled(i) {
         return this.labels[i] && this.labels[i].classList.contains('tint');

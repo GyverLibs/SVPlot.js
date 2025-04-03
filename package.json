@@ -1,6 +1,6 @@
 {
   "name": "@alexgyver/svplot",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "Tiny chart plotter",
   "main": "./SVPlot.js",
   "module": "./SVPlot.js",
@@ -19,8 +19,8 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "@alexgyver/component": "^1.3.5",
-    "@alexgyver/drag-block": "^1.2.13",
-    "@alexgyver/utils": "^1.0.12"
+    "@alexgyver/component": "^1.3.6",
+    "@alexgyver/drag-block": "^1.2.14",
+    "@alexgyver/utils": "^1.0.14"
   }
 }
