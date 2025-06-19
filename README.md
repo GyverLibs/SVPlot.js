@@ -11,12 +11,12 @@
 - Режим перемещения графика и выбора точек
 - Полная поддержка управления с тачскрина
 
-![svplot](/svplot.png)
-
 [demo](https://gyverlibs.github.io/SVPlot.js/test/)
 
+![svplot](/svplot.png)
+
 > **Browser**: https://gyverlibs.github.io/SVPlot.js/SVPlot.min.js
-> 
+
 > **Node**: `npm i @alexgyver/SVPlot`
 
 ## SVPlot
