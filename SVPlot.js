@@ -213,6 +213,8 @@ export default class SVPlot {
 
             let timeline = this.cfg.type == 'timeline';
             if (e.touch && e.type === 'move') e.type = 'drag';
+            let isUnix = this._isUnix();
+            let toSec = unix => (unix / 1000000).toFixed(3);
 
             switch (e.type) {
                 case 'zoom': {
@@ -237,12 +239,13 @@ export default class SVPlot {
                         let durw = Math.abs(e.pos.x - this.pressX);
                         let durx = Math.min(this.pressX, e.pos.x);
                         let durs = durw / w * this.maxSecs;
+                        let tshow = isUnix ? (Math.floor(durs / 86400) + ':' + new Date(durs * 1000).toISOString().slice(11, 22)) : toSec(durs * 1000);
                         SVG.config(this.$dur_rect, {
                             attrs: { x: Math.min(this.pressX, e.pos.x), width: durw }
                         });
                         SVG.config(this.$dur_text, {
                             attrs: { x: durx + durw / 2, fill: this._getProp('--font') },
-                            text: Math.floor(durs / 86400) + ':' + new Date(durs * 1000).toISOString().slice(11, 22),
+                            text: tshow,
                         });
                     } else {
                         this.tZero -= e.move.x / (w / this.maxSecs);
@@ -276,21 +279,28 @@ export default class SVPlot {
                 case 'click': {
                     //#region cursor
                     let unix = (this.tZero - (1 - e.pos.x / w) * this.maxSecs) * 1000;
-                    let twidth = 150;
-                    let tx = constrain(e.pos.x, twidth / 2, w - twidth / 2);
                     let getDate = (u) => localTime(u).toISOString().split('T');
+                    let tshow = isUnix ? getDate(unix).join(' ').slice(0, -3) : toSec(unix);
 
+                    let tab, txt;
                     SVG.config(this.$cursor, {
                         children_r: [
                             makeLine(e.pos.x, timeline ? 0 : offsTop, e.pos.x, h - offsBottom, this._getProp('--grid'), 1),
-                            SVG.rect(tx - twidth / 2, h - offsBottom, twidth, offsBottom, 3, 0, { fill: this._getProp('--grid') }),
-                            makeText(getDate(unix).join(' ').slice(0, -3), tx, h - 3, this._getProp('--font'), 12, { 'text-anchor': 'middle' }),
+                            tab = SVG.rect(0, h - offsBottom, 0, offsBottom, 3, 0, { fill: this._getProp('--grid') }),
+                            txt = makeText(tshow, e.pos.x, h - 3, this._getProp('--font'), 12, { 'text-anchor': 'middle' }),
                         ]
                     });
+
+                    let bb = txt.getBBox();
+                    SVG.config(txt, { attrs: { x: constrain(bb.x + bb.width / 2, bb.width / 2, w - bb.width / 2) } });
+
+                    const pad = 4;
+                    bb = txt.getBBox();
+                    SVG.config(tab, { attrs: { width: bb.width + pad * 2, x: bb.x - pad } });
                     if (!this.points) break;
 
                     let makeTooltip = (data) => {
-                        let pad = 4;
+                        const pad = 4;
                         let rect = SVG.make('rect');
                         SVG.config(this.$tooltip, { children_r: [rect, ...data] });
 
@@ -319,12 +329,13 @@ export default class SVPlot {
                             for (let p of this.points) {
                                 if (e.pos.x >= p.x1 && e.pos.x <= p.x2 && e.pos.y >= p.y1 && e.pos.y <= p.y2) {
                                     let y = -ystep;
-                                    let txt = (lbl, f, u, y) => makeText(lbl + ': ' + (f ? '-' : getDate(u).join(' ').slice(0, -5)), 0, y, fcol, fsize);
+                                    let makeT = (unix) => { return isUnix ? getDate(unix).join(' ').slice(0, -5) : toSec(unix) };
+                                    let dur = isUnix ? (new Date(p.block.stop - p.block.start).toISOString().substring(11, 19)) : toSec(p.block.stop - p.block.start);
                                     makeTooltip([
                                         makeText(this.cfg.labels[p.axis], 0, y += ystep, this._getCol(p.axis), fsize, {}, true),
-                                        txt('Start', p.block.fstart, p.block.start, y += ystep + 3),
-                                        txt('Stop', p.block.fstop, p.block.stop, y += ystep),
-                                        makeText('Duration: ' + (new Date(p.block.stop - p.block.start).toISOString().substring(11, 19)), 0, y += ystep, fcol, fsize),
+                                        makeText('Start: ' + (p.block.fstart ? '-' : makeT(p.block.start)), 0, y += ystep + 3, fcol, fsize),
+                                        makeText('Stop: ' + (p.block.fstop ? '-' : makeT(p.block.stop)), 0, y += ystep, fcol, fsize),
+                                        makeText('Duration: ' + dur, 0, y += ystep, fcol, fsize),
                                     ]);
                                     p.rect.classList.add('active');
                                     break;
@@ -367,8 +378,8 @@ export default class SVPlot {
                                     {},
                                     true
                                 )),
-                                makeText(getDate(found)[0], 0, y += ystep + 5, fcol, fsize),
-                                makeText(getDate(found)[1].slice(0, -2), 0, y += ystep, fcol, fsize),
+                                makeText(isUnix ? getDate(found)[0] : (found / 1000000).toFixed(3), 0, y += ystep + 5, fcol, fsize),
+                                isUnix ? makeText(getDate(found)[1].slice(0, -2), 0, y += ystep, fcol, fsize) : null,
                             ]);
                         }
                     } // type line
@@ -387,6 +398,7 @@ export default class SVPlot {
         });
     }
 
+    // release resizer
     release() {
         this._resizer.disconnect();
     }
@@ -442,16 +454,21 @@ export default class SVPlot {
     }
 
     //#region config data
+    // clear plot data
     clearData() {
         this.data = {};
         this.tZero = now() / 1000 | 0;
         this._render();
     }
+
+    // stretch plot to fill window
     fitData() {
         this._resetZ();
         this._fit();
         this._render();
     }
+
+    // move right and shift on new data
     autoData() {
         this._resetZ();
         this._auto(true);
@@ -460,12 +477,12 @@ export default class SVPlot {
 
     //#region setData
     /**
+     * if sequence starts with 0 - will be displayed in seconds (add time in ms). If not 0 - unix date-time mode (add time in sec or ms)
      * @param {*} data 
      * running     [ y0, y1, .. ]
      * stack       [ y0, y1, .. ]
-     * plot        { x0:[y0, ..], .. }
-     * timeline    { x0:[y0, ..], .. } | { x0:{y0:state, y2:state}, .. }
-     * @returns 
+     * plot        { t0: [y0, ..], .. }
+     * timeline    { t0: [y0, ..], .. } | { t0: {y0:state, y2:state}, .. }
      */
     setData(data) {
         let arr = Array.isArray(data);
@@ -727,6 +744,7 @@ export default class SVPlot {
             stepsec = Math.floor(stepsec / n) * n;
             let start = Math.ceil(this.tZero / stepsec) * stepsec;
             if (!stepsec) return;
+            let isUnix = this._isUnix();
 
             let i = 0;
             while (1) {
@@ -735,15 +753,14 @@ export default class SVPlot {
                 if (x < -maxTStep / 2) break;
                 i++;
 
-                let ts = (this.maxSecs < 86400) ?
-                    new Date(t * 1000).toTimeString().split(' ')[0] :
-                    new Date(t * 1000).toISOString().split('T')[0];
+                if (isUnix) t = (this.maxSecs < 86400) ? new Date(t * 1000).toTimeString().split(' ')[0] : new Date(t * 1000).toISOString().split('T')[0];
+                else t = (t / 1000.0).toFixed(1);
 
                 SVG.config(this.$grid, {
                     children: [
                         makeLine(0, h - offsBottom, w, h - offsBottom, this._getProp('--grid'), 1.5),
                         makeLine(x, h - offsBottom - 6, x, h - offsBottom - 1, this._getProp('--grid'), 2),
-                        makeText(ts, x, h - offsBottom + 14, this._getProp('--font'), 11, { 'text-anchor': 'middle' }),
+                        makeText(t, x, h - offsBottom + 14, this._getProp('--font'), 11, { 'text-anchor': 'middle' }),
                     ],
                 });
             }
@@ -752,6 +769,9 @@ export default class SVPlot {
     //#endregion _render
 
     //#region misc
+    _isUnix() {
+        return Number(Object.keys(this.data)[0]);
+    }
     _getProp(name) {
         return window.getComputedStyle(this.$svp).getPropertyValue(name);
     }
