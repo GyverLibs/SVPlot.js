@@ -16,6 +16,7 @@
 [demo](https://gyverlibs.github.io/SVPlot.js/test/)
 
 > browser: https://gyverlibs.github.io/SVPlot.js/SVPlot.min.js
+> 
 > node: npm i @alexgyver/SVPlot
 
 ## SVPlot
