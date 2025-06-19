@@ -8,12 +8,12 @@
 - Полноэкранный режим
 - Тёмная и светлая темы
 - Скачивание в формате SVG
-- Режим перемещения графика и выбора точек
+- Режим перемещения графика и измерения диапазона
 - Полная поддержка управления с тачскрина
 
 [demo](https://gyverlibs.github.io/SVPlot.js/test/)
 
-![svplot](/svplot.png)
+![svplot](/svplot.webp)
 
 > **Browser**: https://gyverlibs.github.io/SVPlot.js/SVPlot.min.js
 
