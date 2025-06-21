@@ -42,6 +42,11 @@ setData(data);
  */
 setConfig(params);
 
+/**
+ * @param {Array} labels
+ */
+setLabels(labels);
+
 // clear plot data
 clearData();
 

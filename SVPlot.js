@@ -31,21 +31,21 @@ export default class SVPlot {
             context: this,
             parent: parent,
             class: 'svp',
-            var: 'svp',
+            $: 'svp',
             children: [
                 {
                     class: 'menu',
                     children: [
                         {
                             class: 'labels',
-                            var: 'labels',
+                            $: 'labels',
                         },
                         {
                             style: 'display:flex',
                             children: [
                                 {
                                     class: 'buttons none',
-                                    var: 'buttons',
+                                    $: 'buttons',
                                     children: [
                                         {
                                             class: 'button',
@@ -56,7 +56,7 @@ export default class SVPlot {
                                         },
                                         {
                                             class: 'button',
-                                            var: 'single',
+                                            $: 'single',
                                             child: makeIcon('M17 4V20M17 20L13 16M17 20L21 16M7 20V4M7 4L3 8M7 4L11 8'),
                                             events: {
                                                 click: () => {
@@ -101,7 +101,7 @@ export default class SVPlot {
                                             }
                                         }, {
                                             class: ['sel_mode', 'button'],
-                                            var: 'sel_mode',
+                                            $: 'sel_mode',
                                             child: makeIcon('M4.4 3.4c-.5-.1-.7-.2-.84-.14a.5.5 0 0 0-.3.3c-.1.16.0.4.14.84l4.21 14.3c.13.4.2.64.3.7a.5.5 0 0 0 .4.1c.16-.03.3-.2.6-.5L12 16l4.4 4.4.2.2.3.3.4.3a.5.5 0 0 0 .31 0c.1-.0.2-.14.41-.3l2.9-2.9c.2-.2.3-.3.3-.41a.5.5 0 0 0 0-.31c-.1-.1-.1-.2-.3-.41L16 12l3.1-3.1c.3-.3.47-.47.5-.63a.5.5 0 0 0-.1-.4c-.1-.13-.3-.2-.74-.31l-14.3-4.2Z'),
                                             events: {
                                                 click: () => {
@@ -113,7 +113,7 @@ export default class SVPlot {
                                         {
                                             class: 'button',
                                             child: makeIcon('M3 21L21 3M3 21H9M3 21L3 15M21 3H15M21 3V9'),
-                                            var: 'fullscr',
+                                            $: 'fullscr',
                                             events: {
                                                 click: () => {
                                                     this.$svp.classList.toggle('fullscreen');
@@ -138,7 +138,7 @@ export default class SVPlot {
                                         {
                                             class: 'button',
                                             child: makeIcon('M4 12H20M20 12L14 6M20 12L14 18'),
-                                            var: 'auto',
+                                            $: 'auto',
                                             events: {
                                                 click: () => this.autoData(),
                                             },
@@ -151,7 +151,7 @@ export default class SVPlot {
                             class: 'dots',
                             child: {
                                 tag: 'svg',
-                                var: 'dots',
+                                $: 'dots',
                                 style: 'width: 4px;height: 18px',
                                 children: [...Array(3).keys()].map(i => {
                                     return {
@@ -176,10 +176,10 @@ export default class SVPlot {
                 },
                 {
                     class: 'svcont',
-                    var: 'svcont',
+                    $: 'svcont',
                     child: {
                         tag: 'svg',
-                        var: 'plot',
+                        $: 'plot',
                         class: 'svg',
                         style: 'font-family: Verdana, sans-serif;pointer-events: none;',
                         attrs: {
@@ -187,18 +187,18 @@ export default class SVPlot {
                             height: '100%',
                         },
                         children: [
-                            { tag: 'g', var: 'grid' },
-                            { tag: 'g', var: 'cursor' },
-                            { tag: 'g', var: 'lines' },
-                            { tag: 'g', var: 'markers' },
-                            { tag: 'g', var: 'gtext' },
+                            { tag: 'g', $: 'grid' },
+                            { tag: 'g', $: 'cursor' },
+                            { tag: 'g', $: 'lines' },
+                            { tag: 'g', $: 'markers' },
+                            { tag: 'g', $: 'gtext' },
                             {
-                                tag: 'g', var: 'dur', children: [
-                                    { tag: 'rect', var: 'dur_rect', attrs: { y: offsTop - 1, width: 0, stroke: 'none', fill: 'black' }, style: 'filter: opacity(0.3)' },
-                                    { tag: 'text', var: 'dur_text', attrs: { y: offsTop - 5, fill: '--font', 'text-anchor': 'middle' }, style: 'font-size: 13px' },
+                                tag: 'g', $: 'dur', children: [
+                                    { tag: 'rect', $: 'dur_rect', attrs: { y: offsTop - 1, width: 0, stroke: 'none', fill: 'black' }, style: 'filter: opacity(0.3)' },
+                                    { tag: 'text', $: 'dur_text', attrs: { y: offsTop - 5, fill: '--font', 'text-anchor': 'middle' }, style: 'font-size: 13px' },
                                 ]
                             },
-                            { tag: 'g', var: 'tooltip', style: 'filter: opacity(0.9)' },
+                            { tag: 'g', $: 'tooltip', style: 'filter: opacity(0.9)' },
                         ]
                     },
                 }
@@ -451,6 +451,14 @@ export default class SVPlot {
 
         if (this.tmr) clearTimeout(this.tmr);
         this._render();
+    }
+
+    /**
+     * 
+     * @param {Array} labels
+     */
+    setLabels(labels) {
+        this.setConfig({ labels: labels });
     }
 
     //#region config data
@@ -815,7 +823,7 @@ export default class SVPlot {
     auto = false;
 
     // https://www.minifier.org/
-    static css = `.svp.light{--back:#fff;--font:#111;--grid:#cacaca}.svp.dark{--back:#1c1d22;--font:#c3c3c3;--grid:#4a4a4a}.svp{all:unset;font-family:Verdana,sans-serif;background:var(--back);height:100%;width:100%;display:flex;flex-direction:column;color:var(--font);user-select:none;padding:4px;box-sizing:border-box;z-index:10}.svp.fullscreen{position:fixed;left:0;top:0}.svp .svcont{width:100%;height:100%;overflow:hidden;touch-action:none}.svp .menu{all:unset;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:5px 3px;min-height:24px}.svp .label{all:unset;display:inline-flex;vertical-align:middle;align-items:center;padding-right:7px;font-size:14px;cursor:pointer}.svp .label.tint{filter:opacity(.4)}.svp .label .marker{all:unset;width:7px;height:7px;margin-right:6px}.svp .buttons{all:unset;display:flex;align-items:stretch;gap:3px;flex-wrap:wrap}.svp .tblock.active{fill:var(--active);stroke:#000;stroke-width:3}.svp .button{all:unset;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--grid);border-radius:7px;padding:2px;width:16px;height:16px;font-size:11px}.svp .button.active{border:1px solid var(--font)}.svp .button:hover{border:1px solid var(--font)}.svp .none{display:none}.svp .dots{all:unset;display:flex;align-items:center;justify-content:center;cursor:pointer;padding-left:7px}`;
+    static css = `.svp.light{--back:#fff;--font:#111;--grid:#cacaca}.svp.dark{--back:#1c1d22;--font:#c3c3c3;--grid:#4a4a4a}.svp{all:unset;font-family:Verdana,sans-serif;background:var(--back);height:100%;width:100%;display:flex;flex-direction:column;color:var(--font);user-select:none;padding:4px;box-sizing:border-box;z-index:10}.svp.fullscreen{position:fixed;left:0;top:0}.svp .svcont{width:100%;height:100%;overflow:hidden;touch-action:none}.svp .menu{all:unset;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:5px 3px;min-height:24px}.svp .label{all:unset;display:inline-flex;vertical-align:middle;align-items:center;padding-right:7px;font-size:14px;cursor:pointer}.svp .label.tint{filter:opacity(.4)}.svp .label .marker{all:unset;width:7px;height:7px;margin-right:6px}.svp .buttons{all:unset;display:flex;align-items:stretch;gap:3px;flex-wrap:wrap}.svp .tblock.active{fill:var(--active);stroke:#000;stroke-width:3}.svp .button{all:unset;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--grid);border-radius:7px;padding:2px;width:16px;height:16px;font-size:11px}.svp .button.active{border:1px solid var(--font)}.svp .button:hover{border:1px solid var(--font)}.svp .none{display:none}.svp .dots{all:unset;display:flex;align-items:center;justify-content:center;cursor:pointer;padding-left:7px;padding-right:2px}`;
 }
 
 //#region function
