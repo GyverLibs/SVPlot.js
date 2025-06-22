@@ -414,11 +414,15 @@ export default class SVPlot {
         this.$plot.style.background = this._getProp('--back');
 
         this.units = [];
+        this.dashed = [];
         this.cfg.labels = this.cfg.labels.map(l => {
             let unit = '';
             let res = l.match(/(.*)\[(.*)\]$/);
             if (res) l = res[1], unit = res[2];
             this.units.push(unit);
+            let n = 0;
+            while (l.startsWith('-')) l = l.slice(1), ++n;
+            this.dashed.push(n);
             return l;
         });
 
@@ -699,9 +703,10 @@ export default class SVPlot {
                         if (this._disabled(ax)) continue;
                         let xy = '';
                         vals.forEach(v => xy += `${v.x},${v.y[ax]} `);
+                        let d = this.dashed[ax];
 
                         SVG.config(this.$lines, {
-                            child: SVG.polyline(xy, { fill: 'none', stroke: this._getCol(ax), 'stroke-width': 2 }),
+                            child: SVG.polyline(xy, { fill: 'none', stroke: this._getCol(ax), 'stroke-width': d ? 1.5 : 2, 'stroke-dasharray': `${d * 3} ${d * 2}` })
                         });
                     }
 
@@ -817,6 +822,7 @@ export default class SVPlot {
 
     labels = [];
     units = [];
+    dashed = [];
     points = null;
     tZero = 0;
     maxSecs = 10;
