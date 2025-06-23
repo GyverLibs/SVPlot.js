@@ -15,15 +15,17 @@ document.addEventListener("DOMContentLoaded", () => {
         i += 0.1;
     }, 1000);
 
+
     let plot2 = new SVPlot(document.getElementById('plot2'), { type: 'stack', dark: dark });
     setInterval(() => plot2.setData([rnd() * 10]), 500);
 
     let plot3 = new SVPlot(document.getElementById('plot3'), { type: 'plot', dark: dark });
     let o = {};
     (new Array(2000)).fill(0).map((x, i) => {
-        o[unix() - 30 + i] = [Math.sin(i / 10) * 2, Math.sin(i / 10 + 0.8)];
+        o[i] = [Math.sin(i / 10) * 2, Math.sin(i / 10 + 0.8)];
     });
     plot3.setData(o);
+    // plot3.setRange(3);
 
     let plot4 = new SVPlot(document.getElementById('plot4'), { type: 'timeline', dark: dark });
     o = {};

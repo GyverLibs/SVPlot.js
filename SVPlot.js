@@ -487,6 +487,11 @@ export default class SVPlot {
         this._render();
     }
 
+    // set display range in seconds
+    setRange(range) {
+        this.maxSecs = this._isUnix() ? range : range * 1000;
+    }
+
     //#region setData
     /**
      * if sequence starts with 0 - will be displayed in seconds (add time in ms). If not 0 - unix date-time mode (add time in sec or ms)

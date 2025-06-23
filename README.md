@@ -58,6 +58,9 @@ autoData();
 
 // release resizer
 release();
+
+// set display range in seconds
+setRange(range);
 ```
 
 ## Создание
