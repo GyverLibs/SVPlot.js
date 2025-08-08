@@ -1,6 +1,6 @@
 {
   "name": "@alexgyver/svplot",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Tiny chart plotter",
   "main": "./SVPlot.js",
   "module": "./SVPlot.js",
@@ -16,10 +16,10 @@
   "author": "AlexGyver <alex@alexgyver.ru>",
   "license": "MIT",
   "devDependencies": {
-    "webpack": "^5.99.9",
+    "webpack": "^5.101.0",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2",
-    "mini-css-extract-plugin": "^2.9.2",
+    "mini-css-extract-plugin": "^2.9.3",
     "style-loader": "^4.0.0",
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.3"

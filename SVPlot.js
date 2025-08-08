@@ -504,6 +504,7 @@ export default class SVPlot {
     setData(data) {
         let arr = Array.isArray(data);
         let cmp = (a1, a2) => a1 && a2 && a1.every((v, i) => v === a2[i]);
+        let passNaN = arr => arr.map(v => { let num = Number(v); return Number.isNaN(num) ? 0 : num; });
 
         switch (this.cfg.type) {
             case 'running':
@@ -521,7 +522,7 @@ export default class SVPlot {
             // fall
             case 'stack':
                 if (!arr) return;
-                this.data[now()] = data.map(Number);
+                this.data[now()] = passNaN(data);
                 break;
 
             case 'timeline':
@@ -550,7 +551,7 @@ export default class SVPlot {
                 for (let key in data) {
                     let t = Number(key);
                     t = Math.floor((t < 99999999999) ? t * 1000 : t);
-                    if (!lastv || lastv < t) this.data[t] = data[key].map(Number);
+                    if (!lastv || lastv < t) this.data[t] = passNaN(data[key]);
                 }
                 break;
         }
