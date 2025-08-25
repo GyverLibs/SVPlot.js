@@ -49,98 +49,74 @@ export default class SVPlot {
                                         {
                                             class: 'button',
                                             child: makeIcon('M 2,12 H 22 M 2,12 6.2,16.2 M 2,12 6.2,7.7 M 22,12 17.7,7.7 M 22,12 17.7,16.2'),
-                                            events: {
-                                                click: () => this.fitData(),
-                                            }
+                                            click: () => this.fitData(),
                                         },
                                         {
                                             class: 'button',
                                             $: 'single',
                                             child: makeIcon('M17 4V20M17 20L13 16M17 20L21 16M7 20V4M7 4L3 8M7 4L11 8'),
-                                            events: {
-                                                click: () => {
-                                                    this.$single.classList.toggle('active');
-                                                    this._render();
-                                                }
+                                            click: () => {
+                                                this.$single.classList.toggle('active');
+                                                this._render();
                                             }
                                         },
                                         {
                                             class: 'button',
                                             text: '1s',
-                                            events: {
-                                                click: () => this._setMax(1),
-                                            }
+                                            click: () => this._setMax(1),
                                         },
                                         {
                                             class: 'button',
                                             text: '1m',
-                                            events: {
-                                                click: () => this._setMax(60),
-                                            }
+                                            click: () => this._setMax(60),
                                         },
                                         {
                                             class: 'button',
                                             text: '1h',
-                                            events: {
-                                                click: () => this._setMax(3600),
-                                            }
+                                            click: () => this._setMax(3600),
                                         },
                                         {
                                             class: 'button',
                                             text: '1d',
-                                            events: {
-                                                click: () => this._setMax(86400),
-                                            }
+                                            click: () => this._setMax(86400),
                                         },
                                         {
                                             class: 'button',
                                             text: '1w',
-                                            events: {
-                                                click: () => this._setMax(86400 * 7),
-                                            }
+                                            click: () => this._setMax(86400 * 7),
                                         }, {
                                             class: ['sel_mode', 'button'],
                                             $: 'sel_mode',
                                             child: makeIcon('M4.4 3.4c-.5-.1-.7-.2-.84-.14a.5.5 0 0 0-.3.3c-.1.16.0.4.14.84l4.21 14.3c.13.4.2.64.3.7a.5.5 0 0 0 .4.1c.16-.03.3-.2.6-.5L12 16l4.4 4.4.2.2.3.3.4.3a.5.5 0 0 0 .31 0c.1-.0.2-.14.41-.3l2.9-2.9c.2-.2.3-.3.3-.41a.5.5 0 0 0 0-.31c-.1-.1-.1-.2-.3-.41L16 12l3.1-3.1c.3-.3.47-.47.5-.63a.5.5 0 0 0-.1-.4c-.1-.13-.3-.2-.74-.31l-14.3-4.2Z'),
-                                            events: {
-                                                click: () => {
-                                                    this.sel_mode = !this.sel_mode;
-                                                    this.$sel_mode.classList.toggle('active');
-                                                }
-                                            },
+                                            click: () => {
+                                                this.sel_mode = !this.sel_mode;
+                                                this.$sel_mode.classList.toggle('active');
+                                            }
                                         },
                                         {
                                             class: 'button',
                                             child: makeIcon('M3 21L21 3M3 21H9M3 21L3 15M21 3H15M21 3V9'),
                                             $: 'fullscr',
-                                            events: {
-                                                click: () => {
-                                                    this.$svp.classList.toggle('fullscreen');
-                                                    this.$fullscr.classList.toggle('active');
-                                                }
+                                            click: () => {
+                                                this.$svp.classList.toggle('fullscreen');
+                                                this.$fullscr.classList.toggle('active');
                                             }
                                         },
                                         {
                                             class: 'button',
                                             child: makeIcon('M21 21H3M18 11L12 17M12 17L6 11M12 17V3'),
-                                            events: {
-                                                click: () => downloadSVG(this.$plot),
-                                            }
+                                            click: () => downloadSVG(this.$plot),
                                         },
                                         {
                                             class: 'button',
                                             child: makeIcon('M18 6L6 18M6 6L18 18'),
-                                            events: {
-                                                click: () => this.clearData(),
-                                            }
+                                            click: () => this.clearData(),
                                         },
                                         {
                                             class: 'button',
                                             child: makeIcon('M4 12H20M20 12L14 6M20 12L14 18'),
                                             $: 'auto',
-                                            events: {
-                                                click: () => this.autoData(),
-                                            },
+                                            click: () => this.autoData(),
                                         },
                                     ]
                                 },
@@ -164,11 +140,9 @@ export default class SVPlot {
                                     }
                                 }),
                             },
-                            events: {
-                                click: () => {
-                                    this.$buttons.classList.toggle('none');
-                                    this.$labels.classList.toggle('none');
-                                },
+                            click: () => {
+                                this.$buttons.classList.toggle('none');
+                                this.$labels.classList.toggle('none');
                             },
                         },
                     ],
@@ -441,12 +415,10 @@ export default class SVPlot {
                         text: label,
                     },
                 ],
-                events: {
-                    click: () => {
-                        if (this.cfg.type != 'timeline') {
-                            this.labels[i].classList.toggle('tint');
-                            this._render();
-                        }
+                click: () => {
+                    if (this.cfg.type != 'timeline') {
+                        this.labels[i].classList.toggle('tint');
+                        this._render();
                     }
                 }
             })),
