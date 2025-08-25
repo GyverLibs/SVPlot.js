@@ -27,8 +27,7 @@ export default class SVPlot {
         SVPlot.css = addStyle(SVPlot.css);
         parent.style.overflow = 'hidden';
 
-        EL.make('div', {
-            context: this,
+        EL.makeIn(this, 'div', {
             parent: parent,
             class: 'svp',
             $: 'svp',
