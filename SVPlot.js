@@ -351,7 +351,7 @@ export default class SVPlot {
                             let y = -ystep;
                             makeTooltip([
                                 ...this.points[found].y.map((v, i) => makeText(
-                                    `${this.cfg.labels[i] ?? i}: ${this.data[found][i].toFixed(2)}${this.units[i] ?? ''}`,
+                                    `${this.cfg.labels[i] ?? i}: ${this.data[found]?.[i].toFixed(2)}${this.units[i] ?? ''}`,
                                     0,
                                     y += ystep,
                                     this._getCol(i),
