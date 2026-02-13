@@ -1,4 +1,5 @@
-import SVPlot from "https://gyverlibs.github.io/SVPlot.js/SVPlot.min.js";
+import SVPlot from 'https://gyverlibs.github.io/SVPlot.js/SVPlot.min.js'
+// import SVPlot from "../SVPlot.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     let rnd = () => Math.random() * 100 - 50;
@@ -7,13 +8,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // dark = false;
 
     let unix = () => (new Date()).getTime() / 1000;
-    
+
     let plot1 = new SVPlot(document.getElementById('plot1'), { type: 'running', dark: dark, period: 200 });
-    plot1.setConfig({ labels: ['abc', 'def', 'kek'] });
+    plot1.setConfig({ labels: ['--abc[%]', '-def', 'kek'] });
     setInterval(() => {
         plot1.setData([Math.sin(i) * 2, Math.sin(i + 0.8), Math.sin(i * 2) * 1.5]);
         i += 0.1;
     }, 1000);
+
 
     let plot2 = new SVPlot(document.getElementById('plot2'), { type: 'stack', dark: dark });
     setInterval(() => plot2.setData([rnd() * 10]), 500);
@@ -21,10 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let plot3 = new SVPlot(document.getElementById('plot3'), { type: 'plot', dark: dark });
     let o = {};
     (new Array(2000)).fill(0).map((x, i) => {
-        o[unix() - 30 + i] = [Math.sin(i / 10) * 2, Math.sin(i / 10 + 0.8)];
+        o[i] = [Math.sin(i / 10) * 2, Math.sin(i / 10 + 0.8)];
     });
     plot3.setData(o);
-    // setInterval(() => plot3.setData({[unix]:[rnd() / 10, rnd() / 10]}), 500);
+    // plot3.setRange(3);
 
     let plot4 = new SVPlot(document.getElementById('plot4'), { type: 'timeline', dark: dark });
     o = {};
