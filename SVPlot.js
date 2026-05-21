@@ -1,5 +1,5 @@
-import { addCSS, EL, SVG } from '@alexgyver/component';
 import { constrain, hsl2rgb, localTime, map, now } from '@alexgyver/utils';
+import { addCSS, EL, SVG } from '@alexgyver/component';
 import DragBlock from '@alexgyver/drag-block';
 // import './svp.css'
 
@@ -24,7 +24,7 @@ export default class SVPlot {
      * @param {*} params dark: false, type: 'running|stack|plot|timeline', labels: [''], period: 200
      */
     constructor(parent, params = {}, context = window) {
-        addCSS(SVPlot.css);
+        addCSS(SVPlot.css, 'SVPlot.css');
         parent.style.overflow = 'hidden';
 
         EL.make('div', {
@@ -186,7 +186,7 @@ export default class SVPlot {
         });
 
         //#region ## DragBlock
-        DragBlock(this.$svcont, (e) => {
+        let unsub = DragBlock(this.$svcont, (e) => {
             let w = this.$plot.clientWidth;
             let h = this.$plot.clientHeight;
             if (!w || !h) return;
@@ -366,13 +366,17 @@ export default class SVPlot {
                     } // type line
                 } break;
             }
-        }, context);
+        }, { context });
+
+        EL.register(this.$svcont, unsub);
 
         this.setConfig(params);
     }
 
-    // release resizer
-    release() { }
+    destroy() {
+        this.$svp.remove();
+        this.$svp = null;
+    }
 
     //#region ## setConfig
     /**
@@ -556,9 +560,9 @@ export default class SVPlot {
         });
     }
     _doRender() {
-        EL.clear(this.$lines);
-        EL.clear(this.$grid);
-        EL.clear(this.$gtext);
+        EL.clear(this.$lines, false);
+        EL.clear(this.$grid, false);
+        EL.clear(this.$gtext, false);
         this.points = null;
 
         if (!this.tZero) return;
@@ -787,9 +791,9 @@ export default class SVPlot {
         this.tZero = (keys.length ? Number(keys.slice(-1)[0]) : now()) / 1000;
     }
     _clearMarkers() {
-        EL.clear(this.$cursor);
-        EL.clear(this.$markers);
-        EL.clear(this.$tooltip);
+        EL.clear(this.$cursor, false);
+        EL.clear(this.$markers, false);
+        EL.clear(this.$tooltip, false);
     }
     _disabled(i) {
         return this.labels[i] && this.labels[i].classList.contains('tint');
