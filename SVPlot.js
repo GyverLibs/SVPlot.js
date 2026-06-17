@@ -50,13 +50,25 @@ export default class SVPlot {
                                     children: [
                                         {
                                             class: 'button',
+                                            title: 'Fit to width',
                                             child: getIcon('M 2,12 H 22 M 2,12 6.2,16.2 M 2,12 6.2,7.7 M 22,12 17.7,7.7 M 22,12 17.7,16.2'),
                                             onClick: () => this.fitData(),
                                         },
                                         {
                                             class: 'button',
+                                            title: 'Multi Y axis',
                                             $: 'single',
                                             child: getIcon('M17 4V20M17 20L13 16M17 20L21 16M7 20V4M7 4L3 8M7 4L11 8'),
+                                            onClick: (e) => {
+                                                e.el.classList.toggle('active');
+                                                this._render();
+                                            }
+                                        },
+                                        {
+                                            class: 'button active',
+                                            title: 'Auto scale',
+                                            $: 'autoscale',
+                                            text: 'A',
                                             onClick: (e) => {
                                                 e.el.classList.toggle('active');
                                                 this._render();
@@ -88,6 +100,7 @@ export default class SVPlot {
                                             onClick: () => this._setMax(86400 * 7),
                                         }, {
                                             class: 'button sel_mode',
+                                            title: 'Time select mode',
                                             child: getIcon('M4.4 3.4c-.5-.1-.7-.2-.84-.14a.5.5 0 0 0-.3.3c-.1.16.0.4.14.84l4.21 14.3c.13.4.2.64.3.7a.5.5 0 0 0 .4.1c.16-.03.3-.2.6-.5L12 16l4.4 4.4.2.2.3.3.4.3a.5.5 0 0 0 .31 0c.1-.0.2-.14.41-.3l2.9-2.9c.2-.2.3-.3.3-.41a.5.5 0 0 0 0-.31c-.1-.1-.1-.2-.3-.41L16 12l3.1-3.1c.3-.3.47-.47.5-.63a.5.5 0 0 0-.1-.4c-.1-.13-.3-.2-.74-.31l-14.3-4.2Z'),
                                             onClick: (e) => {
                                                 this.sel_mode = !this.sel_mode;
@@ -96,6 +109,7 @@ export default class SVPlot {
                                         },
                                         {
                                             class: 'button',
+                                            title: 'Fullscreen',
                                             child: getIcon('M3 21L21 3M3 21H9M3 21L3 15M21 3H15M21 3V9'),
                                             onClick: (e) => {
                                                 this.$svp.classList.toggle('fullscreen');
@@ -104,16 +118,19 @@ export default class SVPlot {
                                         },
                                         {
                                             class: 'button',
+                                            title: 'Download SVG',
                                             child: getIcon('M21 21H3M18 11L12 17M12 17L6 11M12 17V3'),
                                             onClick: () => downloadSVG(this.$plot),
                                         },
                                         {
                                             class: 'button',
+                                            title: 'Clear data',
                                             child: getIcon('M18 6L6 18M6 6L18 18'),
                                             onClick: () => this.clearData(),
                                         },
                                         {
                                             class: 'button',
+                                            title: 'Stick to right',
                                             child: getIcon('M4 12H20M20 12L14 6M20 12L14 18'),
                                             $: 'auto',
                                             onClick: () => this.autoData(),
@@ -456,6 +473,18 @@ export default class SVPlot {
         this._render();
     }
 
+    // set single Y axis mode
+    singleY(single) {
+        this.$single.classList.toggle('active', single);
+        this._render();
+    }
+
+    // set auto scale Y axis
+    autoScale(auto) {
+        this.$autoscale.classList.toggle('active', auto);
+        this._render();
+    }
+
     // move right and shift on new data
     autoData() {
         this._resetZ();
@@ -669,8 +698,10 @@ export default class SVPlot {
                 const maxv = 999999999;
                 let max = -maxv, min = maxv;
                 let maxs = {}, mins = {};
-                for (let t in this.points) {
-                    let vals = this.points[t];
+                const autoscale = this.$autoscale.classList.contains('active');
+                const pointsRange = autoscale ? this.points : Object.values(this.data);
+                for (let t in pointsRange) {
+                    let vals = pointsRange[t];
                     for (let i in vals) {
                         if (this._disabled(i)) continue;
                         if (vals[i] > max) max = vals[i];
@@ -811,7 +842,7 @@ export default class SVPlot {
     _auto(state) {
         if (this.auto == state) return;
         this.auto = state;
-        state ? this.$auto.classList.add('active') : this.$auto.classList.remove('active');
+        this.$auto.classList.toggle('active', state);
     }
     _setMax(s) {
         this.maxSecs = s;

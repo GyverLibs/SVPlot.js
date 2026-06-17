@@ -53,11 +53,14 @@ clearData();
 // stretch plot to fill window
 fitData();
 
+// set single Y axis mode
+singleY(single);
+
+// set auto scale Y axis
+autoScale(auto);
+
 // move right and shift on new data
 autoData();
-
-// release resizer
-release();
 
 // set display range in seconds
 setRange(range);
