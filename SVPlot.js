@@ -11,6 +11,7 @@ const fsize = 12;
 const ystep = 16;
 const minRange = 1;
 const maxRange = 10 * 365 * 24 * 60 * 60;
+const smoothFactor = 0.6;
 
 //#region # SVPlot
 export default class SVPlot {
@@ -69,6 +70,16 @@ export default class SVPlot {
                                             title: 'Auto scale',
                                             $: 'autoscale',
                                             text: 'A',
+                                            onClick: (e) => {
+                                                e.el.classList.toggle('active');
+                                                this._render();
+                                            }
+                                        },
+                                        {
+                                            class: 'button active',
+                                            title: 'Smooth',
+                                            $: 'smooth',
+                                            text: 'S',
                                             onClick: (e) => {
                                                 e.el.classList.toggle('active');
                                                 this._render();
@@ -725,16 +736,45 @@ export default class SVPlot {
                         this.points[t] = { x: x, y: y };
                     }
 
-                    let vals = Object.values(this.points);
-                    for (let ax in vals[0].y) {
-                        if (this._disabled(ax)) continue;
-                        let xy = '';
-                        vals.forEach(v => xy += `${v.x},${v.y[ax]} `);
-                        let d = this.dashed[ax];
+                    const getAttrs = (ax, dash) => ({
+                        fill: 'none',
+                        stroke: this._getCol(ax),
+                        'stroke-width': dash ? 1.5 : 2,
+                        'stroke-dasharray': dash ? `${dash * 3} ${dash * 2}` : null,
+                        'stroke-linejoin': 'round',
+                        'stroke-linecap': 'round'
+                    });
 
-                        SVG.update(this.$lines, {
-                            child: SVG.polyline(xy, { fill: 'none', stroke: this._getCol(ax), 'stroke-width': d ? 1.5 : 2, 'stroke-dasharray': `${d * 3} ${d * 2}` })
-                        });
+                    // smooth
+                    if (this.$smooth.classList.contains('active')) {
+                        let vals = Object.values(this.points);
+
+                        for (let ax in vals[0].y) {
+                            if (this._disabled(ax)) continue;
+
+                            let points = vals.map(v => ({
+                                x: v.x,
+                                y: v.y[ax]
+                            }));
+
+                            SVG.update(this.$lines, {
+                                child: SVG.path(
+                                    smoothPathThroughPoints(points, smoothFactor),
+                                    getAttrs(ax, this.dashed[ax])
+                                )
+                            });
+                        }
+
+                        // non smooth
+                    } else {
+                        let vals = Object.values(this.points);
+                        for (let ax in vals[0].y) {
+                            if (this._disabled(ax)) continue;
+                            let xy = '';
+                            vals.forEach(v => xy += `${v.x},${v.y[ax]} `);
+
+                            SVG.update(this.$lines, getAttrs(ax, this.dashed[ax]));
+                        }
                     }
 
                     // grid
@@ -895,3 +935,30 @@ const getIcon = (d) => ({
         'stroke-linejoin': 'round',
     }),
 });
+
+function smoothPathThroughPoints(points, smooth = 0.5) {
+    if (!points.length) return '';
+    if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
+
+    // smooth: 0..1
+    smooth = Math.max(0, Math.min(1, smooth));
+
+    let d = `M ${points[0].x},${points[0].y}`;
+
+    for (let i = 0; i < points.length - 1; i++) {
+        let p0 = points[i - 1] || points[i];
+        let p1 = points[i];
+        let p2 = points[i + 1];
+        let p3 = points[i + 2] || p2;
+
+        let cp1x = p1.x + (p2.x - p0.x) * smooth / 6;
+        let cp1y = p1.y + (p2.y - p0.y) * smooth / 6;
+
+        let cp2x = p2.x - (p3.x - p1.x) * smooth / 6;
+        let cp2y = p2.y - (p3.y - p1.y) * smooth / 6;
+
+        d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+    }
+
+    return d;
+}
