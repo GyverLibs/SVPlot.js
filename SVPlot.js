@@ -773,7 +773,9 @@ export default class SVPlot {
                             let xy = '';
                             vals.forEach(v => xy += `${v.x},${v.y[ax]} `);
 
-                            SVG.update(this.$lines, getAttrs(ax, this.dashed[ax]));
+                            SVG.update(this.$lines, {
+                                child: SVG.polyline(xy, getAttrs(ax, this.dashed[ax]))
+                            });
                         }
                     }
 
