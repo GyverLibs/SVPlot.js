@@ -16,13 +16,13 @@ const smoothFactor = 0.6;
 //#region # SVPlot
 export default class SVPlot {
     data = {};
-    cfg = { dark: false, type: 'plot', labels: [], period: 200 };
+    cfg = { dark: false, type: 'plot', labels: [], period: 200, smooth: true, autoscale: true, single: true };
     sel_mode = false;
     pressX = 0;
 
     /**
      * @param {HTMLElement} parent 
-     * @param {*} params dark: false, type: 'running|stack|plot|timeline', labels: [''], period: 200
+     * @param {*} params dark: false, type: 'running|stack|plot|timeline', labels: [''], period: 200, smooth: true, autoscale: true, single: true
      */
     constructor(parent, params = {}, context = window) {
         addCSS(SVPlot.css, 'SVPlot.css');
@@ -57,7 +57,7 @@ export default class SVPlot {
                                         },
                                         {
                                             class: 'button',
-                                            title: 'Multi Y axis',
+                                            title: 'Single Y axis',
                                             $: 'single',
                                             child: getIcon('M17 4V20M17 20L13 16M17 20L21 16M7 20V4M7 4L3 8M7 4L11 8'),
                                             onClick: (e) => {
@@ -66,7 +66,7 @@ export default class SVPlot {
                                             }
                                         },
                                         {
-                                            class: 'button active',
+                                            class: 'button',
                                             title: 'Auto scale',
                                             $: 'autoscale',
                                             text: 'A',
@@ -76,7 +76,7 @@ export default class SVPlot {
                                             }
                                         },
                                         {
-                                            class: 'button active',
+                                            class: 'button',
                                             title: 'Smooth',
                                             $: 'smooth',
                                             text: 'S',
@@ -409,7 +409,7 @@ export default class SVPlot {
     //#region ## setConfig
     /**
      * 
-     * @param {*} params dark: false, type: 'running|stack|plot|timeline', labels: [''], period: 200
+     * @param {*} params dark: false, type: 'running|stack|plot|timeline', labels: [''], period: 200, smooth: true, autoscale: true, single: true
      */
     setConfig(params) {
         this.cfg = { ...this.cfg, ...params };
@@ -418,6 +418,10 @@ export default class SVPlot {
         let st = window.getComputedStyle(this.$svp);
         this._props = Object.fromEntries(['font', 'grid', 'back'].map(p => [p, st.getPropertyValue('--' + p)]));
         this.$plot.style.background = this._props.back;
+
+        this.$smooth.classList.toggle('active', this.cfg.smooth);
+        this.$single.classList.toggle('active', this.cfg.single);
+        this.$autoscale.classList.toggle('active', this.cfg.autoscale);
 
         this.units = [];
         this.dashed = [];
@@ -485,14 +489,22 @@ export default class SVPlot {
     }
 
     // set single Y axis mode
-    singleY(single) {
-        this.$single.classList.toggle('active', single);
+    singleY(val) {
+        this.$single.classList.toggle('active', val);
         this._render();
     }
 
     // set auto scale Y axis
-    autoScale(auto) {
-        this.$autoscale.classList.toggle('active', auto);
+    autoScale(val) {
+        this.cfg.autoscale = val;
+        this.$autoscale.classList.toggle('active', val);
+        this._render();
+    }
+
+    // set smooth lines
+    smooth(val) {
+        this.cfg.smooth = val;
+        this.$smooth.classList.toggle('active', val);
         this._render();
     }
 
@@ -725,13 +737,13 @@ export default class SVPlot {
                 }
 
                 if (min != maxv) {
-                    let singleY = this.$single.classList.contains('active');
+                    let multi_y = !this.$single.classList.contains('active');
 
                     // lines
                     for (let t in this.points) {
                         let x = calcX(t);
                         let y;
-                        if (singleY) y = this.points[t].map((v, i) => scale(v, mins[i], maxs[i]));
+                        if (multi_y) y = this.points[t].map((v, i) => scale(v, mins[i], maxs[i]));
                         else y = this.points[t].map(v => scale(v, min, max));
                         this.points[t] = { x: x, y: y };
                     }
@@ -792,10 +804,10 @@ export default class SVPlot {
                         for (let i = 0; i < am + 1; i++) {
                             let y = scale(max - step * i, min, max);
                             if (i != am) grids.push(makeLine(0, y, w, y, prop.grid, 1, { 'stroke-dasharray': '7 8' }));
-                            if (!singleY) txts.push(makeText((max - step * i).toFixed(1), 0, y - 5, prop.font, 12, shadow));
+                            if (!multi_y) txts.push(makeText((max - step * i).toFixed(1), 0, y - 5, prop.font, 12, shadow));
                         }
 
-                        if (singleY) {
+                        if (multi_y) {
                             let x = 0;
                             for (let ax in maxs) {
                                 ax = Number(ax);

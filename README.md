@@ -38,7 +38,7 @@ SVPlot(parent, params = {}, context = window);
 setData(data);
 
 /**
- * @param {*} params dark: true|false, type: 'running|stack|plot|timeline', labels: [''], period: 200
+ * @param {*} params dark: true|false, type: 'running|stack|plot|timeline', labels: [''], period: 200, smooth: true, autoscale: true, single: true
  */
 setConfig(params);
 
@@ -52,12 +52,6 @@ clearData();
 
 // stretch plot to fill window
 fitData();
-
-// set single Y axis mode
-singleY(single);
-
-// set auto scale Y axis
-autoScale(auto);
 
 // move right and shift on new data
 autoData();
